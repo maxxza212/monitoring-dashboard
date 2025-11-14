@@ -1,17 +1,18 @@
 <template>
     <v-card>
-        <v-card-title>Daftar Device</v-card-title>
+        <v-card-title>Daftar Alat</v-card-title>
         <v-data-table :headers="headers" :items="devices" class="elevation-1" @click:row="goToDeviceDetail">
-            <template #item.id="{ item }">
+            <template #item.id_alat="{ item }">
                 <v-btn variant="text" color="primary" @click.stop="goToDeviceDetail(item)">
-                    {{ item.id }}
+                    {{ item.id_alat }}
                 </v-btn>
             </template>
 
-            <!-- ✅ Tambahkan badge status -->
-            <template #item.status="{ item }">
-                <v-chip :color="item.status === 'Online' ? 'success' : 'error'" size="small">
-                    {{ item.status }}
+            <!-- ✅ Badge kategori Normal/Tidak Normal -->
+            <template #item.kategori="{ item }">
+                <v-chip :color="item.kategori === 'Normal' ? 'success' : 'error'" size="small"
+                    :prepend-icon="item.kategori === 'Normal' ? 'mdi-check-circle' : 'mdi-alert-circle'">
+                    {{ item.kategori }}
                 </v-chip>
             </template>
         </v-data-table>
@@ -23,18 +24,19 @@ import { useRouter } from 'vue-router'
 import { useDevices } from '@/composables/useDevices'
 
 const router = useRouter()
-const { devices } = useDevices() // ✅ Ambil dari composable
+const { devices } = useDevices()
 
 const headers = [
-    { title: 'ID Device', key: 'id' },
-    { title: 'Nama Device', key: 'name' },
+    { title: 'ID Alat', key: 'id_alat' },
+    { title: 'Nama Alat', key: 'name' },
     { title: 'Lokasi', key: 'location' },
-    { title: 'Status', key: 'status' },
+    { title: 'Kategori', key: 'kategori' },
 ]
 
 const goToDeviceDetail = (device) => {
-    if (device && device.id) {
-        router.push(`/device/${device.id}`)
+    if (device && device.id_alat) {
+        // ✅ Gunakan id_alat (angka murni tanpa prefix D)
+        router.push(`/device/${device.id_alat}`)
     }
 }
 </script>

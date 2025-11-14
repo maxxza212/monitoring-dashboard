@@ -1,16 +1,19 @@
 <template>
     <v-card class="pa-4">
-        <v-card-title class="text-h6 font-weight-bold">
-            {{ device.name }} — {{ device.location }}
+        <!-- Header dengan Kategori -->
+        <v-card-title class="d-flex justify-space-between align-center flex-wrap">
+            <span class="text-h6 font-weight-bold">
+                {{ device.name }} — {{ device.location }}
+            </span>
         </v-card-title>
 
         <!-- Card Data Sensor -->
         <v-row>
             <v-col v-for="card in sensorCards" :key="card.title" cols="12" sm="6" md="3">
-                <v-card :color="card.color" dark class="text-center py-4">
-                    <v-icon size="36" class="mb-2">{{ card.icon }}</v-icon>
-                    <div class="text-h6">{{ card.title }}</div>
-                    <div class="text-h5 font-weight-bold">{{ card.value }}</div>
+                <v-card :class="card.gradientClass" class="text-center py-4 sensor-card">
+                    <v-icon size="36" class="mb-2 card-icon">{{ card.icon }}</v-icon>
+                    <div class="text-h6 card-text">{{ card.title }}</div>
+                    <div class="text-h5 font-weight-bold card-text">{{ card.value }}</div>
                 </v-card>
             </v-col>
         </v-row>
@@ -28,8 +31,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick, shallowRef, markRaw } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, shallowRef, markRaw } from 'vue'
 import Chart from 'chart.js/auto'
+import { useDevices } from '@/composables/useDevices'
+import { useSensorData } from '@/composables/useSensorData'
 
 const props = defineProps({
     device: {
@@ -38,91 +43,148 @@ const props = defineProps({
     }
 })
 
+const { updateDeviceKategori } = useDevices()
+const { fetchSensorData } = useSensorData(props.device.id_alat)
+
 const chartCanvas = ref(null)
-// gunakan shallowRef agar instance Chart tidak direaktifkan Vue
 const chart = shallowRef(null)
 const sensorCards = ref([])
+const isUsingAPI = ref(false)
 
-// Boleh tetap reaktif untuk memudahkan logika, tapi JANGAN di-binding langsung ke Chart.js
 const chartData = ref({
     labels: [],
-    suhuKulkas: [],
-    suhuRuangan: [],
-    kelembapanKulkas: [],
-    kelembapanRuangan: [],
+    suhu1: [],
+    suhu2: [],
+    kelembapan1: [],
+    kelembapan2: [],
 })
 
 let interval = null
 
-function generateSensorDataByType(type) {
-    switch (type) {
-        case 'lab':
-            return {
-                suhuKulkas: (Math.random() * 2 + 3).toFixed(1),
-                suhuRuangan: (Math.random() * 2 + 25).toFixed(1),
-                kelembapanKulkas: (Math.random() * 10 + 50).toFixed(1),
-                kelembapanRuangan: (Math.random() * 10 + 55).toFixed(1),
+const deviceKategori = computed(() => {
+    const allNormal = sensorCards.value.every(card => card.isNormal !== false)
+    return allNormal ? 'Normal' : 'Tidak Normal'
+})
+
+const normalRanges = computed(() => {
+    const ranges = {
+        lab: {
+            suhu1: { min: 2, max: 8 },
+            suhu2: { min: 20, max: 30 },
+            kelembapan1: { min: 40, max: 70 },
+            kelembapan2: { min: 40, max: 70 },
+        },
+        gudang: {
+            suhu1: { min: 5, max: 15 },
+            suhu2: { min: 25, max: 35 },
+            kelembapan1: { min: 50, max: 80 },
+            kelembapan2: { min: 50, max: 80 },
+        },
+        coldroom: {
+            suhu1: { min: -2, max: 5 },
+            suhu2: { min: 18, max: 25 },
+            kelembapan1: { min: 40, max: 60 },
+            kelembapan2: { min: 40, max: 70 },
+        },
+    }
+    return ranges[props.device.type] || ranges.lab
+})
+
+function isValueNormal(value, sensorType) {
+    const range = normalRanges.value[sensorType]
+    if (!range) return true
+    return value >= range.min && value <= range.max
+}
+
+async function updateData() {
+    try {
+        console.log('🔄 Fetching new data from API...')
+
+        const apiData = await fetchSensorData()
+
+        if (apiData) {
+            console.log('✅ Data received from API:', apiData)
+            isUsingAPI.value = true
+
+            const data = {
+                suhu1: parseFloat(apiData.suhu1).toFixed(1),
+                suhu2: parseFloat(apiData.suhu2).toFixed(1),
+                kelembapan1: parseFloat(apiData.kelembapan1).toFixed(1),
+                kelembapan2: parseFloat(apiData.kelembapan2).toFixed(1),
             }
-        case 'gudang':
-            return {
-                suhuKulkas: (Math.random() * 3 + 8).toFixed(1),
-                suhuRuangan: (Math.random() * 4 + 28).toFixed(1),
-                kelembapanKulkas: (Math.random() * 10 + 60).toFixed(1),
-                kelembapanRuangan: (Math.random() * 10 + 65).toFixed(1),
-            }
-        case 'coldroom':
-            return {
-                suhuKulkas: (Math.random() * 2 + 1).toFixed(1),
-                suhuRuangan: (Math.random() * 3 + 20).toFixed(1),
-                kelembapanKulkas: (Math.random() * 5 + 45).toFixed(1),
-                kelembapanRuangan: (Math.random() * 10 + 50).toFixed(1),
-            }
-        default:
-            return {
-                suhuKulkas: (Math.random() * 5 + 5).toFixed(1),
-                suhuRuangan: (Math.random() * 5 + 25).toFixed(1),
-                kelembapanKulkas: (Math.random() * 10 + 55).toFixed(1),
-                kelembapanRuangan: (Math.random() * 10 + 60).toFixed(1),
-            }
+
+            updateDataDisplay(data)
+        } else {
+            console.warn('⚠️ No data from API')
+            isUsingAPI.value = false
+        }
+    } catch (err) {
+        console.error('❌ Error fetching data:', err)
+        isUsingAPI.value = false
     }
 }
 
-function updateData() {
-    const data = generateSensorDataByType(props.device?.type)
-
-    // Update cards
+function updateDataDisplay(data) {
     sensorCards.value = [
-        { title: 'Suhu Kulkas', value: `${data.suhuKulkas} °C`, icon: 'mdi-snowflake', color: 'blue' },
-        { title: 'Suhu Ruangan', value: `${data.suhuRuangan} °C`, icon: 'mdi-thermometer', color: 'orange' },
-        { title: 'Kelembapan Kulkas', value: `${data.kelembapanKulkas}%`, icon: 'mdi-water-percent', color: 'indigo' },
-        { title: 'Kelembapan Ruangan', value: `${data.kelembapanRuangan}%`, icon: 'mdi-weather-rainy', color: 'teal' },
+        {
+            title: 'Suhu 1',
+            value: `${data.suhu1} °C`,
+            icon: 'mdi-thermometer',
+            gradientClass: 'gradient-blue',
+            isNormal: isValueNormal(parseFloat(data.suhu1), 'suhu1')
+        },
+        {
+            title: 'Suhu 2',
+            value: `${data.suhu2} °C`,
+            icon: 'mdi-thermometer',
+            gradientClass: 'gradient-orange',
+            isNormal: isValueNormal(parseFloat(data.suhu2), 'suhu2')
+        },
+        {
+            title: 'Kelembapan 1',
+            value: `${data.kelembapan1}%`,
+            icon: 'mdi-water-percent',
+            gradientClass: 'gradient-purple',
+            isNormal: isValueNormal(parseFloat(data.kelembapan1), 'kelembapan1')
+        },
+        {
+            title: 'Kelembapan 2',
+            value: `${data.kelembapan2}%`,
+            icon: 'mdi-water-percent',
+            gradientClass: 'gradient-teal',
+            isNormal: isValueNormal(parseFloat(data.kelembapan2), 'kelembapan2')
+        },
     ]
 
-    // Update data lokal (reaktif) — Chart.js tidak memegang referensi langsung ke array ini
+    updateDeviceKategori(props.device.id_alat, {
+        suhu1: parseFloat(data.suhu1),
+        suhu2: parseFloat(data.suhu2),
+        kelembapan1: parseFloat(data.kelembapan1),
+        kelembapan2: parseFloat(data.kelembapan2),
+    })
+
     const time = new Date().toLocaleTimeString()
     chartData.value.labels.push(time)
-    chartData.value.suhuKulkas.push(parseFloat(data.suhuKulkas))
-    chartData.value.suhuRuangan.push(parseFloat(data.suhuRuangan))
-    chartData.value.kelembapanKulkas.push(parseFloat(data.kelembapanKulkas))
-    chartData.value.kelembapanRuangan.push(parseFloat(data.kelembapanRuangan))
+    chartData.value.suhu1.push(parseFloat(data.suhu1))
+    chartData.value.suhu2.push(parseFloat(data.suhu2))
+    chartData.value.kelembapan1.push(parseFloat(data.kelembapan1))
+    chartData.value.kelembapan2.push(parseFloat(data.kelembapan2))
 
-    // Batasi 10 point terakhir
     if (chartData.value.labels.length > 10) {
         chartData.value.labels.shift()
-        chartData.value.suhuKulkas.shift()
-        chartData.value.suhuRuangan.shift()
-        chartData.value.kelembapanKulkas.shift()
-        chartData.value.kelembapanRuangan.shift()
+        chartData.value.suhu1.shift()
+        chartData.value.suhu2.shift()
+        chartData.value.kelembapan1.shift()
+        chartData.value.kelembapan2.shift()
     }
 
-    // Salin (clone) ke chart.data agar tidak share referensi dengan array reaktif
     if (chart.value) {
         const c = chart.value
         c.data.labels = chartData.value.labels.slice()
-        c.data.datasets[0].data = chartData.value.suhuKulkas.slice()
-        c.data.datasets[1].data = chartData.value.suhuRuangan.slice()
-        c.data.datasets[2].data = chartData.value.kelembapanKulkas.slice()
-        c.data.datasets[3].data = chartData.value.kelembapanRuangan.slice()
+        c.data.datasets[0].data = chartData.value.suhu1.slice()
+        c.data.datasets[1].data = chartData.value.suhu2.slice()
+        c.data.datasets[2].data = chartData.value.kelembapan1.slice()
+        c.data.datasets[3].data = chartData.value.kelembapan2.slice()
         c.update()
     }
 }
@@ -130,7 +192,6 @@ function updateData() {
 function createChart() {
     if (!chartCanvas.value) return
 
-    // hancurkan chart lama jika ada
     if (chart.value) {
         chart.value.destroy()
         chart.value = null
@@ -140,11 +201,10 @@ function createChart() {
     const config = {
         type: 'line',
         data: {
-            // PENTING: gunakan array baru (plain), jangan ambil referensi dari chartData.value.*
             labels: [],
             datasets: [
                 {
-                    label: 'Suhu Kulkas (°C)',
+                    label: 'Suhu 1 (°C)',
                     data: [],
                     borderColor: 'rgb(59, 130, 246)',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -152,7 +212,7 @@ function createChart() {
                     fill: false
                 },
                 {
-                    label: 'Suhu Ruangan (°C)',
+                    label: 'Suhu 2 (°C)',
                     data: [],
                     borderColor: 'rgb(249, 115, 22)',
                     backgroundColor: 'rgba(249, 115, 22, 0.1)',
@@ -160,7 +220,7 @@ function createChart() {
                     fill: false
                 },
                 {
-                    label: 'Kelembapan Kulkas (%)',
+                    label: 'Kelembapan 1 (%)',
                     data: [],
                     borderColor: 'rgb(99, 102, 241)',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -168,7 +228,7 @@ function createChart() {
                     fill: false
                 },
                 {
-                    label: 'Kelembapan Ruangan (%)',
+                    label: 'Kelembapan 2 (%)',
                     data: [],
                     borderColor: 'rgb(20, 184, 166)',
                     backgroundColor: 'rgba(20, 184, 166, 0.1)',
@@ -196,20 +256,18 @@ function createChart() {
         },
     }
 
-    // markRaw agar instance Chart tidak diproxy oleh Vue
     chart.value = markRaw(new Chart(ctx, config))
 }
 
 function initDashboard() {
     if (!props.device) return
 
-    // Reset data lokal
     chartData.value = {
         labels: [],
-        suhuKulkas: [],
-        suhuRuangan: [],
-        kelembapanKulkas: [],
-        kelembapanRuangan: [],
+        suhu1: [],
+        suhu2: [],
+        kelembapan1: [],
+        kelembapan2: [],
     }
     sensorCards.value = []
 
@@ -217,7 +275,7 @@ function initDashboard() {
     updateData()
 
     if (interval) clearInterval(interval)
-    interval = setInterval(updateData, 2000)
+    interval = setInterval(updateData, 30000)
 }
 
 function teardown() {
@@ -236,9 +294,8 @@ onMounted(async () => {
     initDashboard()
 })
 
-// Hindari deep: true yang bisa memicu reinit terus-menerus
 watch(
-    () => [props.device?.id, props.device?.type],
+    () => [props.device?.id_alat, props.device?.type],
     () => {
         teardown()
         nextTick().then(() => initDashboard())
@@ -249,3 +306,43 @@ onBeforeUnmount(() => {
     teardown()
 })
 </script>
+
+<style scoped>
+/* Card styling */
+.sensor-card {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sensor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Icon dan Text berwarna putih */
+.card-icon {
+    color: #ffffff !important;
+}
+
+.card-text {
+    color: #ffffff !important;
+}
+
+/* ✅ Gradasi Modern */
+.gradient-blue {
+    background: linear-gradient(135deg, #00005C 0%, #00D4FF 100%) !important;
+}
+
+.gradient-orange {
+    background: linear-gradient(135deg, #3A1C71 0%, #FDBB2D 100%) !important;
+}
+
+.gradient-purple {
+    background: linear-gradient(135deg, #3a47d5 0%, #00d2ff 100%) !important;
+}
+
+.gradient-teal {
+    background: linear-gradient(135deg, #92FE9D 0%, #00C9FF 100%) !important;
+}
+</style>
