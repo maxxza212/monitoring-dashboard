@@ -16,8 +16,8 @@ import backgroundImage from '@/assets/images/background.png'
 <style scoped>
 .custom-background {
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-    url('@/assets/images/background.png');
+    /* linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), */
+    url('@/assets/images/bg.svg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
