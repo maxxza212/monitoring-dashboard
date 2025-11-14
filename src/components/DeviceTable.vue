@@ -35,7 +35,7 @@ const headers = [
 
 const goToDeviceDetail = (device) => {
     if (device && device.id_alat) {
-        // ✅ Gunakan id_alat (angka murni tanpa prefix D)
+        //Gunakan id_alat (angka murni tanpa prefix D)
         router.push(`/device/${device.id_alat}`)
     }
 }
