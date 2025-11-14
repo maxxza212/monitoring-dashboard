@@ -8,7 +8,7 @@
                 </v-btn>
             </template>
 
-            <!-- ✅ Badge kategori Normal/Tidak Normal -->
+            <!-- Badge kategori Normal/Tidak Normal -->
             <template #item.kategori="{ item }">
                 <v-chip :color="item.kategori === 'Normal' ? 'success' : 'error'" size="small"
                     :prepend-icon="item.kategori === 'Normal' ? 'mdi-check-circle' : 'mdi-alert-circle'">
@@ -35,7 +35,7 @@ const headers = [
 
 const goToDeviceDetail = (device) => {
     if (device && device.id_alat) {
-        //Gunakan id_alat (angka murni tanpa prefix D)
+        // Gunakan id_alat (angka murni tanpa prefix D)
         router.push(`/device/${device.id_alat}`)
     }
 }
