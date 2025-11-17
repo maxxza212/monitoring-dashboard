@@ -7,7 +7,7 @@ const loading = ref(false)
 const error = ref(null)
 
 export function useDevices() {
-    // ✅ Fetch devices (alat) dari API
+    // ✅ Fetch devices dengan sensor data
     const fetchDevices = async () => {
         loading.value = true
         error.value = null
@@ -15,14 +15,23 @@ export function useDevices() {
         try {
             console.log('🔄 Fetching devices from API...')
 
-            // Fetch alat
+            // 1. Fetch alat
             const alatResponse = await deviceAPI.getAllDevices()
 
-            // Fetch ruangan untuk ambil nama lokasi
+            // 2. Fetch ruangan
             const ruanganResponse = await deviceAPI.getAllRuangan()
 
+            // 3. Fetch sensors
+            const sensorsResponse = await deviceAPI.getAllSensors()
+
+            // 4. Fetch suhu
+            const suhuResponse = await deviceAPI.getAllSuhu()
+
+            // 5. Fetch kelembapan
+            const kelembapanResponse = await deviceAPI.getAllKelembapan()
+
             if (alatResponse.data.success) {
-                // Buat map ruangan untuk lookup cepat
+                // Buat map ruangan
                 const ruanganMap = new Map()
                 if (ruanganResponse.data.success) {
                     ruanganResponse.data.data.forEach(ruangan => {
@@ -30,16 +39,62 @@ export function useDevices() {
                     })
                 }
 
-                // ✅ Map data dari API ke format yang dibutuhkan frontend
-                devices.value = alatResponse.data.data.map(alat => ({
-                    id_alat: alat.id, // ✅ Angka murni (1, 2, 3) tanpa prefix
-                    name: alat.nama_alat,
-                    location: ruanganMap.get(alat.id_ruangan) || `Ruangan ${alat.id_ruangan}`,
-                    kategori: 'Normal',
-                    type: alat.id === 1 ? 'lab' : alat.id === 2 ? 'gudang' : 'coldroom',
-                }))
+                // Buat map sensors by alat_id
+                const sensorsByAlat = new Map()
+                if (sensorsResponse.data.success) {
+                    sensorsResponse.data.data.forEach(sensor => {
+                        if (!sensorsByAlat.has(sensor.id_alat)) {
+                            sensorsByAlat.set(sensor.id_alat, [])
+                        }
+                        sensorsByAlat.get(sensor.id_alat).push(sensor)
+                    })
+                }
 
-                console.log('✅ Devices loaded:', devices.value)
+                // Ambil data suhu dan kelembapan
+                const suhuData = suhuResponse.data.success ? suhuResponse.data.data.data : []
+                const kelembapanData = kelembapanResponse.data.success ? kelembapanResponse.data.data.data : []
+
+                // ✅ Map data alat dengan sensor data
+                devices.value = alatResponse.data.data.map(alat => {
+                    const alatSensors = sensorsByAlat.get(alat.id) || []
+                    const sensor1 = alatSensors[0]
+                    const sensor2 = alatSensors[1]
+
+                    // Ambil data suhu terbaru untuk sensor 1 dan 2
+                    const suhu1Data = suhuData.find(s => s.id_sensor === sensor1?.id)
+                    const suhu2Data = suhuData.find(s => s.id_sensor === sensor2?.id)
+
+                    // Ambil data kelembapan terbaru untuk sensor 1 dan 2
+                    const kelembapan1Data = kelembapanData.find(k => k.id_sensor === sensor1?.id)
+                    const kelembapan2Data = kelembapanData.find(k => k.id_sensor === sensor2?.id)
+
+                    // Cek kategori berdasarkan sensor data
+                    let kategori = 'Normal'
+                    if (suhu1Data && suhu2Data && kelembapan1Data && kelembapan2Data) {
+                        const sensorDataCheck = {
+                            suhu1: parseFloat(suhu1Data.nilai_suhu),
+                            suhu2: parseFloat(suhu2Data.nilai_suhu),
+                            kelembapan1: parseFloat(kelembapan1Data.nilai_kelembapan),
+                            kelembapan2: parseFloat(kelembapan2Data.nilai_kelembapan),
+                        }
+                        kategori = checkSensorNormal(sensorDataCheck) // ✅ Tanpa parameter type
+                    }
+
+                    return {
+                        id_alat: alat.id,
+                        name: alat.nama_alat,
+                        location: ruanganMap.get(alat.id_ruangan) || `Ruangan ${alat.id_ruangan}`,
+                        kategori: kategori,
+                        // ❌ Hapus property 'type'
+                        // ✅ Tambahkan data sensor
+                        suhu1: suhu1Data?.nilai_suhu ? parseFloat(suhu1Data.nilai_suhu).toFixed(1) : undefined,
+                        suhu2: suhu2Data?.nilai_suhu ? parseFloat(suhu2Data.nilai_suhu).toFixed(1) : undefined,
+                        kelembapan1: kelembapan1Data?.nilai_kelembapan ? parseFloat(kelembapan1Data.nilai_kelembapan).toFixed(1) : undefined,
+                        kelembapan2: kelembapan2Data?.nilai_kelembapan ? parseFloat(kelembapan2Data.nilai_kelembapan).toFixed(1) : undefined,
+                    }
+                })
+
+                console.log('✅ Devices with sensor data loaded:', devices.value)
             }
 
             return devices.value
@@ -71,11 +126,11 @@ export function useDevices() {
 
                     if (!deviceMap.has(alatId)) {
                         deviceMap.set(alatId, {
-                            id_alat: alatId, // ✅ Angka murni
+                            id_alat: alatId,
                             name: `ESP32 Board ${alatId}`,
                             location: `Lokasi ${alatId}`,
                             kategori: 'Normal',
-                            type: alatId === 1 ? 'lab' : alatId === 2 ? 'gudang' : 'coldroom',
+                            // ❌ Hapus property 'type'
                             sensors: []
                         })
                     }
@@ -91,15 +146,14 @@ export function useDevices() {
 
             // Final fallback: dummy data
             devices.value = [
-                { id_alat: 1, name: 'ESP32 Board 1', location: 'Ruang Server', kategori: 'Normal', type: 'lab' },
-                { id_alat: 2, name: 'ESP32 Board 2', location: 'Ruang Lab Komputer', kategori: 'Normal', type: 'gudang' },
+                { id_alat: 1, name: 'ESP32 Board 1', location: 'Ruang Server', kategori: 'Normal' },
+                { id_alat: 2, name: 'ESP32 Board 2', location: 'Ruang Lab Komputer', kategori: 'Normal' },
             ]
         }
     }
 
-    // ✅ Get device by ID - sekarang pakai id_alat
+    // ✅ Get device by ID
     const getDeviceById = (id) => {
-        // Convert ke number untuk matching
         const numericId = parseInt(id)
         return devices.value.find(d => d.id_alat === numericId)
     }
@@ -127,11 +181,11 @@ export function useDevices() {
                 }
 
                 return {
-                    id_alat: alat.id, // ✅ Angka murni
+                    id_alat: alat.id,
                     name: alat.nama_alat,
                     location: namaRuangan,
                     kategori: 'Normal',
-                    type: alat.id === 1 ? 'lab' : alat.id === 2 ? 'gudang' : 'coldroom',
+                    // ❌ Hapus property 'type'
                 }
             }
         } catch (err) {
@@ -148,7 +202,7 @@ export function useDevices() {
         const device = devices.value.find(d => d.id_alat === numericId)
         if (!device) return
 
-        const kategori = checkSensorNormal(sensorData, device.type)
+        const kategori = checkSensorNormal(sensorData) // ✅ Tanpa parameter type
         device.kategori = kategori
     }
 
@@ -164,30 +218,15 @@ export function useDevices() {
     }
 }
 
-// Helper: Cek sensor normal
-function checkSensorNormal(sensorData, deviceType) {
-    const normalRanges = {
-        lab: {
-            suhu1: { min: 2, max: 8 },
-            suhu2: { min: 20, max: 30 },
-            kelembapan1: { min: 40, max: 70 },
-            kelembapan2: { min: 40, max: 70 },
-        },
-        gudang: {
-            suhu1: { min: 5, max: 15 },
-            suhu2: { min: 25, max: 35 },
-            kelembapan1: { min: 50, max: 80 },
-            kelembapan2: { min: 50, max: 80 },
-        },
-        coldroom: {
-            suhu1: { min: -2, max: 5 },
-            suhu2: { min: 18, max: 25 },
-            kelembapan1: { min: 40, max: 60 },
-            kelembapan2: { min: 40, max: 70 },
-        },
+// ✅ Helper: Cek sensor normal - TANPA parameter deviceType
+function checkSensorNormal(sensorData) {
+    // ✅ Satu range universal untuk semua device
+    const ranges = {
+        suhu1: { min: 25, max: 35 },
+        suhu2: { min: 25, max: 35 },
+        kelembapan1: { min: 20, max: 50 },
+        kelembapan2: { min: 20, max: 50 },
     }
-
-    const ranges = normalRanges[deviceType] || normalRanges.lab
 
     const checks = [
         sensorData.suhu1 >= ranges.suhu1.min && sensorData.suhu1 <= ranges.suhu1.max,

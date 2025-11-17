@@ -66,32 +66,16 @@ const deviceKategori = computed(() => {
     return allNormal ? 'Normal' : 'Tidak Normal'
 })
 
-const normalRanges = computed(() => {
-    const ranges = {
-        lab: {
-            suhu1: { min: 2, max: 8 },
-            suhu2: { min: 20, max: 30 },
-            kelembapan1: { min: 40, max: 70 },
-            kelembapan2: { min: 40, max: 70 },
-        },
-        gudang: {
-            suhu1: { min: 5, max: 15 },
-            suhu2: { min: 25, max: 35 },
-            kelembapan1: { min: 50, max: 80 },
-            kelembapan2: { min: 50, max: 80 },
-        },
-        coldroom: {
-            suhu1: { min: -2, max: 5 },
-            suhu2: { min: 18, max: 25 },
-            kelembapan1: { min: 40, max: 60 },
-            kelembapan2: { min: 40, max: 70 },
-        },
-    }
-    return ranges[props.device.type] || ranges.lab
-})
+// ✅ Range UNIVERSAL untuk semua device
+const normalRanges = {
+    suhu1: { min: 25, max: 35 },
+    suhu2: { min: 25, max: 35 },
+    kelembapan1: { min: 20, max: 50 },
+    kelembapan2: { min: 20, max: 50 },
+}
 
 function isValueNormal(value, sensorType) {
-    const range = normalRanges.value[sensorType]
+    const range = normalRanges[sensorType]
     if (!range) return true
     return value >= range.min && value <= range.max
 }
@@ -295,7 +279,7 @@ onMounted(async () => {
 })
 
 watch(
-    () => [props.device?.id_alat, props.device?.type],
+    () => props.device?.id_alat,  // ✅ Hapus props.device?.type
     () => {
         teardown()
         nextTick().then(() => initDashboard())
