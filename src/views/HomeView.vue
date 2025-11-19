@@ -1,3 +1,4 @@
+<!-- src/views/HomeView.vue -->
 <template>
     <v-container>
         <!-- Loading indicator -->
@@ -8,21 +9,64 @@
             <strong>Error:</strong> {{ error }}
         </v-alert>
 
+        <!-- chip update -->
+        <div class="mb-4">
+            <v-chip class="gradient-chip" variant="flat" prepend-icon="mdi-sync">
+                Last update: {{ lastUpdate }}
+            </v-chip>
+        </div>
+
         <!-- Device Table -->
         <DeviceTable />
     </v-container>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import DeviceTable from '@/components/DeviceTable.vue'
 import { useDevices } from '@/composables/useDevices'
 
 const { loading, error, fetchDevices } = useDevices()
+const lastUpdate = ref('--:--:--')
+let refreshInterval = null
 
-// ✅ Fetch devices saat component mounted
-onMounted(async () => {
-    console.log('🏠 HomeView mounted, fetching devices...')
+// Fungsi refresh dengan update timestamp
+const refreshDevices = async () => {
     await fetchDevices()
+    lastUpdate.value = new Date().toLocaleTimeString('id-ID')
+}
+
+// Setup auto-refresh
+onMounted(async () => {
+    console.log('HomeView mounted, starting auto-refresh...')
+
+    // Fetch pertama kali
+    await refreshDevices()
+
+    // Auto-refresh setiap 30 detik
+    refreshInterval = setInterval(refreshDevices, 30000)
+})
+
+// Cleanup saat component unmount
+onBeforeUnmount(() => {
+    if (refreshInterval) {
+        clearInterval(refreshInterval)
+        refreshInterval = null
+        console.log('Auto-refresh stopped')
+    }
 })
 </script>
+
+<style scoped>
+/* Custom gradient chip */
+.gradient-chip {
+    background: linear-gradient(135deg, #34e89e 0%, #0f3443 100%) !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+/* Icon juga berwarna putih */
+.gradient-chip :deep(.v-icon) {
+    color: white !important;
+}
+</style>

@@ -1,3 +1,4 @@
+<!-- src/components/DeviceDashboard.vue -->
 <template>
     <v-card class="pa-4">
         <!-- Header dengan Kategori -->
@@ -68,10 +69,10 @@ const deviceKategori = computed(() => {
 
 // ✅ Range UNIVERSAL untuk semua device
 const normalRanges = {
-    suhu1: { min: 25, max: 35 },
-    suhu2: { min: 25, max: 35 },
-    kelembapan1: { min: 20, max: 50 },
-    kelembapan2: { min: 20, max: 50 },
+    suhu1: { min: 2, max: 8 },
+    suhu2: { min: 1, max: 25 },
+    kelembapan1: { min: 45, max: 60 },
+    kelembapan2: { min: 45, max: 60 },
 }
 
 function isValueNormal(value, sensorType) {
@@ -82,12 +83,12 @@ function isValueNormal(value, sensorType) {
 
 async function updateData() {
     try {
-        console.log('🔄 Fetching new data from API...')
+        console.log('Fetching new data from API...')
 
         const apiData = await fetchSensorData()
 
         if (apiData) {
-            console.log('✅ Data received from API:', apiData)
+            console.log('Data received from API:', apiData)
             isUsingAPI.value = true
 
             const data = {
@@ -99,11 +100,11 @@ async function updateData() {
 
             updateDataDisplay(data)
         } else {
-            console.warn('⚠️ No data from API')
+            console.warn('No data from API')
             isUsingAPI.value = false
         }
     } catch (err) {
-        console.error('❌ Error fetching data:', err)
+        console.error('Error fetching data:', err)
         isUsingAPI.value = false
     }
 }
@@ -279,7 +280,7 @@ onMounted(async () => {
 })
 
 watch(
-    () => props.device?.id_alat,  // ✅ Hapus props.device?.type
+    () => props.device?.id_alat,  // Hapus props.device?.type
     () => {
         teardown()
         nextTick().then(() => initDashboard())
@@ -313,7 +314,7 @@ onBeforeUnmount(() => {
     color: #ffffff !important;
 }
 
-/* ✅ Gradasi Modern */
+/* Gradasi Modern */
 .gradient-blue {
     background: linear-gradient(135deg, #00005C 0%, #00D4FF 100%) !important;
 }

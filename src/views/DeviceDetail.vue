@@ -1,3 +1,4 @@
+<!-- src/views/DeviceDetail.vue -->
 <template>
     <v-container>
         <!-- Tombol kembali -->

@@ -7,7 +7,7 @@ export function useSensorData(deviceId) {
     const loading = ref(false)
     const error = ref(null)
 
-    // ✅ Fetch sensor data dari API berdasarkan id_alat
+    // Fetch sensor data dari API berdasarkan id_alat
     const fetchSensorData = async () => {
         if (!deviceId) return null
 
@@ -15,7 +15,7 @@ export function useSensorData(deviceId) {
         error.value = null
 
         try {
-            console.log(`🔄 Fetching sensor data for device ${deviceId}...`)
+            console.log(`Fetching sensor data for device ${deviceId}...`)
 
             // 1. Ambil daftar sensor untuk device ini
             const sensorsResponse = await deviceAPI.getAllSensors()
@@ -29,10 +29,10 @@ export function useSensorData(deviceId) {
                 sensor => sensor.id_alat === parseInt(deviceId)
             )
 
-            console.log('📊 Device sensors:', deviceSensors)
+            console.log('Device sensors:', deviceSensors)
 
             if (deviceSensors.length === 0) {
-                console.warn('⚠️ No sensors found for this device')
+                console.warn('No sensors found for this device')
                 return null
             }
 
@@ -44,12 +44,12 @@ export function useSensorData(deviceId) {
                 throw new Error('Failed to fetch sensor readings')
             }
 
-            // ✅ Ambil dari data.data (pagination Laravel)
+            //  Ambil dari data.data (pagination Laravel)
             const suhuData = suhuResponse.data.data.data || []
             const kelembapanData = kelembapanResponse.data.data.data || []
 
-            console.log('🌡️ Suhu data:', suhuData)
-            console.log('💧 Kelembapan data:', kelembapanData)
+            console.log('Suhu data:', suhuData)
+            console.log('Kelembapan data:', kelembapanData)
 
             // 3. Asumsi: sensor 1 = suhu1/kelembapan1, sensor 2 = suhu2/kelembapan2
             const sensor1 = deviceSensors[0]
@@ -71,12 +71,12 @@ export function useSensorData(deviceId) {
                 timestamp: new Date(),
             }
 
-            console.log('✅ Sensor data loaded:', sensorData.value)
+            console.log('Sensor data loaded:', sensorData.value)
             return sensorData.value
 
         } catch (err) {
             error.value = err.response?.data?.message || err.message
-            console.error('❌ Error fetching sensor data:', err)
+            console.error('Error fetching sensor data:', err)
             return null
         } finally {
             loading.value = false

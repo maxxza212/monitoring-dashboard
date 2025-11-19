@@ -1,9 +1,10 @@
+<!-- src/components/DeviceTable.vue -->
 <template>
     <v-card>
         <v-card-title>Daftar Alat</v-card-title>
-        <v-data-table :headers="headers" :items="devices" :loading="loading" class="elevation-1"
-            @click:row="goToDeviceDetail">
-            <!-- Nama Alat (clickable) -->
+        <v-data-table :headers="headers" :items="devices" class="elevation-1" @click:row="goToDeviceDetail">
+            
+            <!-- Nama Alat -->
             <template #item.name="{ item }">
                 <v-btn variant="text" color="primary" class="text-left justify-start"
                     @click.stop="goToDeviceDetail(item)">
@@ -59,16 +60,16 @@ import { useRouter } from 'vue-router'
 import { useDevices } from '@/composables/useDevices'
 
 const router = useRouter()
-const { devices, loading } = useDevices()
+const { devices } = useDevices() // HAPUS 'loading'
 
 const headers = [
-    { title: 'Nama Alat', key: 'name', width: '200px' },
-    { title: 'Lokasi', key: 'location', width: '180px' },
-    { title: 'S1', key: 'suhu1', align: 'center', width: '80px' },
-    { title: 'S2', key: 'suhu2', align: 'center', width: '80px' },
-    { title: 'K1', key: 'kelembapan1', align: 'center', width: '80px' },
-    { title: 'K2', key: 'kelembapan2', align: 'center', width: '80px' },
-    { title: 'Kategori', key: 'kategori', align: 'center', width: '120px' },
+    { title: 'Nama Alat', key: 'name' },
+    { title: 'Lokasi', key: 'location' },
+    { title: 'S1', key: 'suhu1' },
+    { title: 'S2', key: 'suhu2' },
+    { title: 'K1', key: 'kelembapan1' },
+    { title: 'K2', key: 'kelembapan2' },
+    { title: 'Kategori', key: 'kategori' },
 ]
 
 const goToDeviceDetail = (device) => {

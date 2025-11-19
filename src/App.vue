@@ -1,3 +1,4 @@
+<!-- src/App.vue -->
 <template>
   <v-app>
     <v-main class="custom-background">
@@ -8,16 +9,11 @@
   </v-app>
 </template>
 
-<script setup>
-// Import foto Anda
-import backgroundImage from '@/assets/images/background.png'
-</script>
-
 <style scoped>
 .custom-background {
   background-image:
     /* linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), */
-    url('@/assets/images/bg.svg');
+  url('@/assets/images/bg.svg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
