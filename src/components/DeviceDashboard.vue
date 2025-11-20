@@ -67,7 +67,7 @@ const deviceKategori = computed(() => {
     return allNormal ? 'Normal' : 'Tidak Normal'
 })
 
-// ✅ Range UNIVERSAL untuk semua device
+// Range UNIVERSAL untuk semua device
 const normalRanges = {
     suhu1: { min: 2, max: 8 },
     suhu2: { min: 1, max: 25 },
