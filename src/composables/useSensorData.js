@@ -29,12 +29,17 @@ export function useSensorData(deviceId) {
                 sensor => sensor.id_alat === parseInt(deviceId)
             )
 
-            console.log('Device sensors:', deviceSensors)
+            console.log('📊 Device sensors (before sort):', deviceSensors)
 
             if (deviceSensors.length === 0) {
-                console.warn('No sensors found for this device')
+                console.warn('⚠️ No sensors found for this device')
                 return null
             }
+
+            // ✅ SORT SENSORS BY ID (ascending: ID terkecil = Sensor 1)
+            deviceSensors.sort((a, b) => a.id - b.id)
+
+            console.log('✅ Device sensors (after sort):', deviceSensors)
 
             // 2. Ambil data suhu dan kelembapan
             const suhuResponse = await deviceAPI.getAllSuhu()
@@ -44,23 +49,33 @@ export function useSensorData(deviceId) {
                 throw new Error('Failed to fetch sensor readings')
             }
 
-            //  Ambil dari data.data (pagination Laravel)
+            // Ambil dari data.data (pagination Laravel)
             const suhuData = suhuResponse.data.data.data || []
             const kelembapanData = kelembapanResponse.data.data.data || []
 
-            console.log('Suhu data:', suhuData)
-            console.log('Kelembapan data:', kelembapanData)
+            console.log('🌡️ Suhu data:', suhuData)
+            console.log('💧 Kelembapan data:', kelembapanData)
 
-            // 3. Asumsi: sensor 1 = suhu1/kelembapan1, sensor 2 = suhu2/kelembapan2
-            const sensor1 = deviceSensors[0]
-            const sensor2 = deviceSensors[1]
+            // 3. Mapping sensor yang sudah di-sort
+            const sensor1 = deviceSensors[0] // Sensor dengan ID terkecil
+            const sensor2 = deviceSensors[1] // Sensor dengan ID berikutnya
 
-            // Ambil nilai terbaru untuk masing-masing sensor (sudah diurutkan dari terbaru)
+            console.log('🔍 Sensor 1 ID:', sensor1?.id)
+            console.log('🔍 Sensor 2 ID:', sensor2?.id)
+
+            // Ambil nilai terbaru untuk masing-masing sensor
             const suhu1Data = suhuData.find(s => s.id_sensor === sensor1?.id)
             const suhu2Data = suhuData.find(s => s.id_sensor === sensor2?.id)
 
             const kelembapan1Data = kelembapanData.find(k => k.id_sensor === sensor1?.id)
             const kelembapan2Data = kelembapanData.find(k => k.id_sensor === sensor2?.id)
+
+            console.log('📊 Matched sensor values:', {
+                suhu1: suhu1Data?.nilai_suhu,
+                suhu2: suhu2Data?.nilai_suhu,
+                kelembapan1: kelembapan1Data?.nilai_kelembapan,
+                kelembapan2: kelembapan2Data?.nilai_kelembapan
+            })
 
             // 4. Format data untuk frontend
             sensorData.value = {
@@ -71,12 +86,12 @@ export function useSensorData(deviceId) {
                 timestamp: new Date(),
             }
 
-            console.log('Sensor data loaded:', sensorData.value)
+            console.log('✅ Sensor data loaded:', sensorData.value)
             return sensorData.value
 
         } catch (err) {
             error.value = err.response?.data?.message || err.message
-            console.error('Error fetching sensor data:', err)
+            console.error('❌ Error fetching sensor data:', err)
             return null
         } finally {
             loading.value = false

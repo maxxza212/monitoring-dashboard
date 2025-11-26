@@ -36,25 +36,25 @@ import { useDevices } from '@/composables/useDevices'
 const route = useRoute()
 const { devices, getDeviceById, fetchDevices, loading } = useDevices()
 
-// ✅ Get device from devices array
+//  Get device from devices array
 const device = computed(() => {
     const id = route.params.id
-    console.log('🔍 Looking for device with ID:', id)
-    console.log('📋 Available devices:', devices.value)
+    console.log('Looking for device with ID:', id)
+    console.log('Available devices:', devices.value)
 
     const found = getDeviceById(id)
 
-    console.log('✅ Device found:', found)
+    console.log('Device found:', found)
     return found
 })
 
 onMounted(async () => {
-    console.log('📍 DeviceDetail mounted')
-    console.log('📍 Route params:', route.params)
+    console.log('DeviceDetail mounted')
+    console.log('Route params:', route.params)
 
     // Pastikan devices sudah di-load
     if (devices.value.length === 0) {
-        console.log('⚠️ Devices empty, fetching...')
+        console.log('Devices empty, fetching...')
         await fetchDevices()
     }
 })
