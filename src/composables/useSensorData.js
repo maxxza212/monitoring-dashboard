@@ -29,17 +29,17 @@ export function useSensorData(deviceId) {
                 sensor => sensor.id_alat === parseInt(deviceId)
             )
 
-            console.log('📊 Device sensors (before sort):', deviceSensors)
+            console.log('Device sensors (before sort):', deviceSensors)
 
             if (deviceSensors.length === 0) {
-                console.warn('⚠️ No sensors found for this device')
+                console.warn('No sensors found for this device')
                 return null
             }
 
-            // ✅ SORT SENSORS BY ID (ascending: ID terkecil = Sensor 1)
+            // SORT SENSORS BY ID (ascending: ID terkecil = Sensor 1)
             deviceSensors.sort((a, b) => a.id - b.id)
 
-            console.log('✅ Device sensors (after sort):', deviceSensors)
+            console.log('Device sensors (after sort):', deviceSensors)
 
             // 2. Ambil data suhu dan kelembapan
             const suhuResponse = await deviceAPI.getAllSuhu()
@@ -53,15 +53,15 @@ export function useSensorData(deviceId) {
             const suhuData = suhuResponse.data.data.data || []
             const kelembapanData = kelembapanResponse.data.data.data || []
 
-            console.log('🌡️ Suhu data:', suhuData)
-            console.log('💧 Kelembapan data:', kelembapanData)
+            console.log('Suhu data:', suhuData)
+            console.log('Kelembapan data:', kelembapanData)
 
             // 3. Mapping sensor yang sudah di-sort
             const sensor1 = deviceSensors[0] // Sensor dengan ID terkecil
             const sensor2 = deviceSensors[1] // Sensor dengan ID berikutnya
 
-            console.log('🔍 Sensor 1 ID:', sensor1?.id)
-            console.log('🔍 Sensor 2 ID:', sensor2?.id)
+            console.log('Sensor 1 ID:', sensor1?.id)
+            console.log('Sensor 2 ID:', sensor2?.id)
 
             // Ambil nilai terbaru untuk masing-masing sensor
             const suhu1Data = suhuData.find(s => s.id_sensor === sensor1?.id)
@@ -70,7 +70,7 @@ export function useSensorData(deviceId) {
             const kelembapan1Data = kelembapanData.find(k => k.id_sensor === sensor1?.id)
             const kelembapan2Data = kelembapanData.find(k => k.id_sensor === sensor2?.id)
 
-            console.log('📊 Matched sensor values:', {
+            console.log('Matched sensor values:', {
                 suhu1: suhu1Data?.nilai_suhu,
                 suhu2: suhu2Data?.nilai_suhu,
                 kelembapan1: kelembapan1Data?.nilai_kelembapan,
@@ -86,12 +86,12 @@ export function useSensorData(deviceId) {
                 timestamp: new Date(),
             }
 
-            console.log('✅ Sensor data loaded:', sensorData.value)
+            console.log('Sensor data loaded:', sensorData.value)
             return sensorData.value
 
         } catch (err) {
             error.value = err.response?.data?.message || err.message
-            console.error('❌ Error fetching sensor data:', err)
+            console.error('Error fetching sensor data:', err)
             return null
         } finally {
             loading.value = false
