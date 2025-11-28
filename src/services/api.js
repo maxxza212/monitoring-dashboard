@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from 'axios'
 
-const API_BASE_URL = 'http://192.168.108.14:8000/api'
+const API_BASE_URL = 'http://192.168.110.3:8000/api'
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -14,11 +14,11 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
     config => {
-        console.log('📤 API Request:', config.method.toUpperCase(), config.url)
+        console.log('API Request:', config.method.toUpperCase(), config.url)
         return config
     },
     error => {
-        console.error('❌ Request Error:', error)
+        console.error('Request Error:', error)
         return Promise.reject(error)
     }
 )
@@ -26,11 +26,11 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
     response => {
-        console.log('✅ API Response:', response.status, response.data)
+        console.log('API Response:', response.status, response.data)
         return response
     },
     error => {
-        console.error('❌ API Error:', {
+        console.error('API Error:', {
             status: error.response?.status,
             message: error.response?.data?.message || error.message,
             data: error.response?.data
