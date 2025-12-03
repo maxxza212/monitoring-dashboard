@@ -2,6 +2,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import DeviceDetail from '@/views/DeviceDetail.vue'
+import { components } from 'vuetify/dist/vuetify.js'
+import Dashboard from '@/views/Sensor/Dashboard.vue'
 
 const routes = [
     {
@@ -14,6 +16,11 @@ const routes = [
         name: 'DeviceDetail',
         component: DeviceDetail,
     },
+    {
+        path: '/sensor',
+        name: 'DashboardSensor',
+        components: Dashboard,
+    }
 ]
 
 const router = createRouter({

@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from 'axios'
 
-const API_BASE_URL = 'http://192.168.110.3:8000/api'
+const API_BASE_URL = 'http://10.107.108.22:6003/api'
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -40,51 +40,71 @@ apiClient.interceptors.response.use(
 )
 
 export const deviceAPI = {
-    // ========== SENSOR ==========
+    // SENSOR
     getAllSensors() {
         return apiClient.get('/sensor')
     },
-
     getSensorById(id) {
         return apiClient.get(`/sensor/${id}`)
     },
+    createSensor(data) {
+        return apiClient.post('/sensor', data)
+    },
+    updateSensor(id, data) {
+        return apiClient.put(`/sensor/${id}`, data)
+    },
+    deleteSensor(id) {
+        return apiClient.delete(`/sensor/${id}`)
+    },
 
-    // ========== ALAT/DEVICE ==========
+    // ALAT/DEVICE 
     getAllDevices() {
         return apiClient.get('/alat')
     },
-
     getDeviceById(id) {
         return apiClient.get(`/alat/${id}`)
     },
+    createDevice(data) {
+        return apiClient.post('/alat', data)
+    },
+    updateDevice(id, data) {
+        return apiClient.put(`/alat/${id}`, data)
+    },
+    deleteDevice(id) {
+        return apiClient.delete(`/alat/${id}`)
+    },
 
-    // ========== RUANGAN ==========
+    // RUANGAN 
     getAllRuangan() {
         return apiClient.get('/ruangan')
     },
-
     getRuanganById(id) {
         return apiClient.get(`/ruangan/${id}`)
     },
+    createRuangan(data) {
+        return apiClient.post('/ruangan', data)
+    },
+    updateRuangan(id, data) {
+        return apiClient.put(`/ruangan/${id}`, data)
+    },
+    deleteRuangan(id) {
+        return apiClient.delete(`/ruangan/${id}`)
+    },
 
-    // ========== SUHU ==========
+    // SUHU
     getAllSuhu() {
         return apiClient.get('/suhu')
     },
-
-    // Get suhu dengan pagination
     getSuhu(page = 1, perPage = 50) {
         return apiClient.get('/suhu', {
             params: { page, per_page: perPage }
         })
     },
 
-    // ========== KELEMBAPAN ==========
+    // KELEMBAPAN
     getAllKelembapan() {
         return apiClient.get('/kelembapan')
     },
-
-    // Get kelembapan dengan pagination
     getKelembapan(page = 1, perPage = 50) {
         return apiClient.get('/kelembapan', {
             params: { page, per_page: perPage }
