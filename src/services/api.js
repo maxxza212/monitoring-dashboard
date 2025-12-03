@@ -1,15 +1,15 @@
 // src/services/api.js
-import axios from 'axios'
+import axios from "axios";
 
 const API_BASE_URL = 'http://10.107.108.22:6003/api'
 
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-    }
-})
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 // Request interceptor
 apiClient.interceptors.request.use(
@@ -112,4 +112,4 @@ export const deviceAPI = {
     },
 }
 
-export default apiClient
+export default apiClient;
