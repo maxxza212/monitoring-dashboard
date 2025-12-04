@@ -70,7 +70,7 @@ const deviceKategori = computed(() => {
 const normalRanges = {
     suhu1: { min: 2, max: 8 },
     suhu2: { min: 1, max: 25 },
-    kelembapan1: { min: 45, max: 60 },
+    // kelembapan1: { min: 45, max: 60 },
     kelembapan2: { min: 45, max: 60 },
 }
 

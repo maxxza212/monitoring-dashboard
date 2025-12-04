@@ -244,9 +244,9 @@ export function useDevices() {
 function checkSensorNormal(sensorData) {
     // Satu range universal untuk semua device
     const ranges = {
-        suhu1: { min: 2, max: 8 },
+   
         suhu2: { min: 1, max: 25 },
-        kelembapan1: { min: 45, max: 60 },
+        // kelembapan1: { min: 45, max: 60 },
         kelembapan2: { min: 45, max: 60 },
     }
 
