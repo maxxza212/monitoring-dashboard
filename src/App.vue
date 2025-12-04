@@ -1,4 +1,3 @@
-<!-- src/App.vue -->
 <template>
   <v-app>
     <v-navigation-drawer v-model="drawer" app width="280" class="glass-drawer" :style="drawerStyle">

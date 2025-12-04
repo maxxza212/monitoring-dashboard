@@ -1,22 +1,16 @@
-<!-- src/views/HomeView.vue -->
 <template>
     <v-container>
-        <!-- Loading indicator -->
         <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
-
-        <!-- Error alert -->
         <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = null">
             <strong>Error:</strong> {{ error }}
         </v-alert>
 
-        <!-- chip update -->
         <div class="mb-4">
             <v-chip class="gradient-chip" variant="flat" prepend-icon="mdi-sync">
                 Last update: {{ lastUpdate }}
             </v-chip>
         </div>
 
-        <!-- Device Table -->
         <DeviceTable />
     </v-container>
 </template>

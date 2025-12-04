@@ -1,4 +1,3 @@
-// src/composables/useDevices.js
 import { ref } from 'vue'
 import { deviceAPI } from '@/services/api'
 
@@ -14,7 +13,7 @@ export function useDevices() {
         error.value = null
 
         try {
-            console.log('Fetching devices from API...')
+            // console.log('Fetching devices from API...')
 
             // 1. Fetch alat
             const alatResponse = await deviceAPI.getAllDevices()
@@ -30,6 +29,8 @@ export function useDevices() {
 
             // 5. Fetch kelembapan
             const kelembapanResponse = await deviceAPI.getAllKelembapan()
+
+            console.log('alat response', alatResponse.data.data)
 
             if (alatResponse.data.success) {
                 // Buat map ruangan
@@ -55,6 +56,9 @@ export function useDevices() {
                 const suhuData = suhuResponse.data.success ? suhuResponse.data.data.data : []
                 const kelembapanData = kelembapanResponse.data.success ? kelembapanResponse.data.data.data : []
 
+                console.log(devices.value)
+
+
                 // Map data alat dengan sensor data
                 devices.value = alatResponse.data.data.map(alat => {
                     const alatSensors = sensorsByAlat.get(alat.id) || []
@@ -64,10 +68,10 @@ export function useDevices() {
                     const sensor1 = alatSensors[0] // Sensor dengan ID terkecil
                     const sensor2 = alatSensors[1] // Sensor dengan ID berikutnya
 
-                    console.log(`Device ${alat.id}:`, {
-                        sensor1_id: sensor1?.id,
-                        sensor2_id: sensor2?.id
-                    })
+                    // console.log(`Device ${alat.id}:`, {
+                    //     sensor1_id: sensor1?.id,
+                    //     sensor2_id: sensor2?.id
+                    // })
 
                     // Ambil data suhu terbaru untuk sensor 1 dan 2
                     const suhu1Data = suhuData.find(s => s.id_sensor === sensor1?.id)
@@ -77,12 +81,12 @@ export function useDevices() {
                     const kelembapan1Data = kelembapanData.find(k => k.id_sensor === sensor1?.id)
                     const kelembapan2Data = kelembapanData.find(k => k.id_sensor === sensor2?.id)
 
-                    console.log(`Device ${alat.id} sensor values:`, {
-                        suhu1: suhu1Data?.nilai_suhu,
-                        suhu2: suhu2Data?.nilai_suhu,
-                        kelembapan1: kelembapan1Data?.nilai_kelembapan,
-                        kelembapan2: kelembapan2Data?.nilai_kelembapan
-                    })
+                    // console.log(`Device ${alat.id} sensor values:`, {
+                    //     suhu1: suhu1Data?.nilai_suhu,
+                    //     suhu2: suhu2Data?.nilai_suhu,
+                    //     kelembapan1: kelembapan1Data?.nilai_kelembapan,
+                    //     kelembapan2: kelembapan2Data?.nilai_kelembapan
+                    // })
 
                     // Cek kategori berdasarkan sensor data
                     let kategori = 'Normal'
@@ -109,13 +113,14 @@ export function useDevices() {
                     }
                 })
 
-                console.log('Devices with sensor data loaded:', devices.value)
+                
+                // console.log('Devices with sensor data loaded:', devices.value)
             }
 
             return devices.value
         } catch (err) {
             error.value = err.response?.data?.message || err.message
-            console.error('Error fetching devices:', err)
+            // console.error('Error fetching devices:', err)
 
             // Fallback: Gunakan data dari sensors
             await fetchSensorsAsFallback()
@@ -153,23 +158,28 @@ export function useDevices() {
                 })
 
                 devices.value = Array.from(deviceMap.values())
-                console.log('Devices created from sensors:', devices.value)
+                // console.log('Devices created from sensors:', devices.value)
             }
         } catch (err) {
-            console.error('Error fetching sensors:', err)
+            // console.error('Error fetching sensors:', err)
             // Final fallback: dummy data
-            devices.value = [
-                { id_alat: 1, name: 'ESP32 Board 1', location: 'Ruang Server', suhu1: '3', suhu2: '25', kelembapan1: '50', kelembapan2: '50', kategori: 'Normal' },
-                { id_alat: 2, name: 'ESP32 Board 2', location: 'Ruang Lab Komputer', suhu1: '2', suhu2: '25', kelembapan1: '50', kelembapan2: '50', kategori: 'Normal' },
-            ]
+            // devices.value = [
+            //     { id_alat: 1, name: 'ESP32 Board 1', location: 'Ruang Server', suhu1: '3', suhu2: '25', kelembapan1: '50', kelembapan2: '50', kategori: 'Normal' },
+            //     { id_alat: 2, name: 'ESP32 Board 2', location: 'Ruang Lab Komputer', suhu1: '2', suhu2: '25', kelembapan1: '50', kelembapan2: '50', kategori: 'Normal' },
+            // ]
         }
     }
 
     // Get device by ID
     const getDeviceById = (id) => {
         const numericId = parseInt(id)
-        return devices.value.find(d => d.id_alat === numericId)
+        return devices.value.find(d => d.id_alat == numericId)
     }
+    // const getDeviceById = (id) => {
+    //     const numericId = Number(id)
+    //     return devices.value.find(d => Number(d.id_alat) === numericId)
+    // }
+
 
     // Fetch device detail dari API
     const fetchDeviceById = async (id) => {
@@ -230,7 +240,7 @@ export function useDevices() {
     }
 }
 
-// Helper: Cek sensor normal - TANPA parameter deviceType
+// Cek sensor normal
 function checkSensorNormal(sensorData) {
     // Satu range universal untuk semua device
     const ranges = {

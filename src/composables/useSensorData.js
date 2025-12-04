@@ -1,4 +1,3 @@
-// src/composables/useSensorData.js
 import { ref } from 'vue'
 import { deviceAPI } from '@/services/api'
 
@@ -24,10 +23,16 @@ export function useSensorData(deviceId) {
                 throw new Error('Failed to fetch sensors')
             }
 
-            // Filter sensors berdasarkan id_alat
+            // Filter sensors berdasarkan id_alat (PERUBAHAN PERTAMA)
             const deviceSensors = sensorsResponse.data.data.filter(
-                sensor => sensor.id_alat === parseInt(deviceId)
+                sensor => sensor.id_alat == parseInt(deviceId)
             )
+            // const allSensors = sensorsResponse.data.data || []
+            // const numericId = Number(deviceId)
+
+            // const deviceSensors = allSensors.filter(
+            //     sensor => Number(sensor.id_alat) === numericId
+            // )
 
             console.log('Device sensors (before sort):', deviceSensors)
 
@@ -49,21 +54,21 @@ export function useSensorData(deviceId) {
                 throw new Error('Failed to fetch sensor readings')
             }
 
-            // Ambil dari data.data (pagination Laravel)
-            const suhuData = suhuResponse.data.data.data || []
-            const kelembapanData = kelembapanResponse.data.data.data || []
+            // (PERUBAHAN KEDUA)
+            // const suhuData = suhuResponse.data.data.data || []
+            // const kelembapanData = kelembapanResponse.data.data.data || []
+            const suhuData = suhuResponse.data.data?.data || []
+            const kelembapanData = kelembapanResponse.data.data?.data || []
 
             console.log('Suhu data:', suhuData)
             console.log('Kelembapan data:', kelembapanData)
 
-            // 3. Mapping sensor yang sudah di-sort
-            const sensor1 = deviceSensors[0] // Sensor dengan ID terkecil
-            const sensor2 = deviceSensors[1] // Sensor dengan ID berikutnya
-
+            // 3. Mapping sensor yang sudah di-sort dengan data suhu dan kelembapan
+            const sensor1 = deviceSensors[0] 
+            const sensor2 = deviceSensors[1] 
             console.log('Sensor 1 ID:', sensor1?.id)
             console.log('Sensor 2 ID:', sensor2?.id)
 
-            // Ambil nilai terbaru untuk masing-masing sensor
             const suhu1Data = suhuData.find(s => s.id_sensor === sensor1?.id)
             const suhu2Data = suhuData.find(s => s.id_sensor === sensor2?.id)
 
@@ -77,14 +82,21 @@ export function useSensorData(deviceId) {
                 kelembapan2: kelembapan2Data?.nilai_kelembapan
             })
 
-            // 4. Format data untuk frontend
+            // PERUBAHAN KETIGA
+            // sensorData.value = {
+            //     suhu1: suhu1Data?.nilai_suhu || 0,
+            //     suhu2: suhu2Data?.nilai_suhu || 0,
+            //     kelembapan1: kelembapan1Data?.nilai_kelembapan || 0,
+            //     kelembapan2: kelembapan2Data?.nilai_kelembapan || 0,
+            //     timestamp: new Date(),
+            // }
             sensorData.value = {
-                suhu1: suhu1Data?.nilai_suhu || 0,
-                suhu2: suhu2Data?.nilai_suhu || 0,
-                kelembapan1: kelembapan1Data?.nilai_kelembapan || 0,
-                kelembapan2: kelembapan2Data?.nilai_kelembapan || 0,
-                timestamp: new Date(),
+                suhu1: Number(suhu1Data?.nilai_suhu ?? 0),
+                suhu2: Number(suhu2Data?.nilai_suhu ?? 0),
+                kelembapan1: Number(kelembapan1Data?.nilai_kelembapan ?? 0),
+                kelembapan2: Number(kelembapan2Data?.nilai_kelembapan ?? 0),
             }
+
 
             console.log('Sensor data loaded:', sensorData.value)
             return sensorData.value
@@ -98,10 +110,17 @@ export function useSensorData(deviceId) {
         }
     }
 
+    const getSensorByDeviceId = async (deviceId) => {
+        if (deviceId == null) return console.error('Id Sensor Tidak ditemukan')
+        const data = await deviceAPI.getSensorById(deviceId)
+        return data
+    }
+
     return {
         sensorData,
         loading,
         error,
-        fetchSensorData
+        fetchSensorData,
+        getSensorByDeviceId
     }
 }

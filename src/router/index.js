@@ -2,8 +2,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import DeviceDetail from '@/views/DeviceDetail.vue'
-import { components } from 'vuetify/dist/vuetify.js'
 import Dashboard from '@/views/Sensor/Dashboard.vue'
+import Ruangan from '@/views/Ruangan/Ruangan.vue'
 
 const routes = [
     {
@@ -19,7 +19,12 @@ const routes = [
     {
         path: '/sensor',
         name: 'DashboardSensor',
-        components: Dashboard,
+        component: Dashboard,
+    },
+    {
+        path: '/ruangan',
+        name: 'RuanganRuangan',
+        component: Ruangan,
     }
 ]
 
@@ -28,4 +33,4 @@ const router = createRouter({
     routes,
 })
 
-export default router // Pastikan ini ada
+export default router 

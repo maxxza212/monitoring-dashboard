@@ -1,4 +1,3 @@
-<!-- src/components/DeviceTable.vue -->
 <template>
     <v-card>
         <v-card-title>Daftar Alat</v-card-title>

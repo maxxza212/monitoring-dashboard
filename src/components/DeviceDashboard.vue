@@ -1,4 +1,3 @@
-<!-- src/components/DeviceDashboard.vue -->
 <template>
     <v-card class="pa-4">
         <!-- Header dengan Kategori -->
