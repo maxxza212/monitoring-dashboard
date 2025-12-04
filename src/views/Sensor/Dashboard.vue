@@ -4,7 +4,8 @@
             <v-icon icon="mdi-chip" class="me-2"></v-icon>
             <span class="text-h6">Daftar Sensor</span>
             <v-spacer></v-spacer>
-            <v-btn color="primary" prepend-icon="mdi-plus" @click="openDialogAdd">
+            <v-btn prepend-icon="mdi-plus" @click="openDialogAdd"
+                style="background: linear-gradient(135deg, #34e89e 0%, #0f3443 100%); color: white;">
                 Tambah Sensor
             </v-btn>
         </v-card-title>
