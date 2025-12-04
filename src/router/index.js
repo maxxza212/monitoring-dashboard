@@ -4,6 +4,7 @@ import HomeView from '@/views/HomeView.vue'
 import DeviceDetail from '@/views/DeviceDetail.vue'
 import Dashboard from '@/views/Sensor/Dashboard.vue'
 import Ruangan from '@/views/Ruangan/Ruangan.vue'
+import Alat from '@/views/Alat/Alat.vue'
 
 const routes = [
     {
@@ -25,6 +26,11 @@ const routes = [
         path: '/ruangan',
         name: 'RuanganRuangan',
         component: Ruangan,
+    },
+    {
+        path: '/alat',
+        name: 'AlatAlat',
+        component: Alat,
     }
 ]
 
