@@ -18,7 +18,6 @@
 
       <!-- Navigation Items -->
       <v-list nav class="py-2 transparent-list">
-        <!-- Dashboard -->
         <v-list-item prepend-icon="mdi-view-dashboard" title="Dasbor" value="dashboard" :active="$route.path === '/'"
           @click="navigateTo('/')" class="mb-1 glass-list-item">
           <template v-slot:append>
@@ -26,17 +25,17 @@
           </template>
         </v-list-item>
 
-        <!-- Alat (Devices) - Direct Link -->
+        <!-- Alat -->
         <v-list-item prepend-icon="mdi-devices" title="Alat" value="devices" :active="$route.path === '/alat'"
           @click="navigateTo('/alat')" class="mb-1 glass-list-item">
         </v-list-item>
 
-        <!-- Ruangan (Rooms) - Direct Link -->
+        <!-- Ruangan -->
         <v-list-item prepend-icon="mdi-home-group" title="Ruangan" value="rooms" :active="$route.path === '/ruangan'"
           @click="navigateTo('/ruangan')" class="mb-1 glass-list-item">
         </v-list-item>
 
-        <!-- Sensor - Direct Link -->
+        <!-- Sensor -->
         <v-list-item prepend-icon="mdi-chip" title="Sensor" value="sensors" :active="$route.path === '/sensor'"
           @click="navigateTo('/sensor')" class="mb-1 glass-list-item">
         </v-list-item>
