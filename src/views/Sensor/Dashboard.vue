@@ -6,7 +6,7 @@
             <v-spacer></v-spacer>
             <v-btn prepend-icon="mdi-plus" @click="openDialogAdd"
                 style="background: linear-gradient(135deg, #34e89e 0%, #0f3443 100%); color: white;">
-                Tambah Sensor
+                Tambah Alat
             </v-btn>
         </v-card-title>
 
@@ -176,10 +176,13 @@ const snackbarText = ref('')
 const snackbarColor = ref('success')
 
 const filteredSensorList = computed(() => {
-    if (!filterById.value) {
+    const q = filterById.value
+    if (q === null || q === undefined || String(q).trim() === '') {
         return sensorList.value
     }
-    return sensorList.value.filter(sensor => sensor.id === parseInt(filterById.value))
+
+    const numeric = Number(q)
+    return sensorList.value.filter(sensor => Number(sensor.id_alat) === numeric)
 })
 
 const getSensors = async () => {

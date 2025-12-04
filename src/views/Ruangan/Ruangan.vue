@@ -162,10 +162,13 @@ const snackbarText = ref('')
 const snackbarColor = ref('success')
 
 const filteredRuanganList = computed(() => {
-    if (!filterById.value) {
+    const q = filterById.value
+    if (q === null || q === undefined || String(q).trim() === '') {
         return ruanganList.value
     }
-    return ruanganList.value.filter(ruangan => ruangan.id === parseInt(filterById.value))
+
+    const numeric = Number(q)
+    return ruanganList.value.filter(ruangan => Number(ruangan.id) === numeric)
 })
 
 // Get Ruangan 

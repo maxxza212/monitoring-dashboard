@@ -176,10 +176,13 @@ const snackbarText = ref('')
 const snackbarColor = ref('success')
 
 const filteredAlatList = computed(() => {
-    if (!filterById.value) {
+    const q = filterById.value
+    if (q === null || q === undefined || String(q).trim() === '') {
         return alatList.value
     }
-    return alatList.value.filter(alat => alat.id === parseInt(filterById.value))
+
+    const numeric = Number(q)
+    return alatList.value.filter(alat => Number(alat.id) === numeric)
 })
 
 const getAlat = async () => {
