@@ -15,7 +15,6 @@ const vuetify = createVuetify({
 
 const app = createApp(App)
 
-// PENTING: Router HARUS sebelum Vuetify
 app.use(router)
 app.use(vuetify)
 app.mount('#app')
