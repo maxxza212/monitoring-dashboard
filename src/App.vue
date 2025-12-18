@@ -28,14 +28,14 @@
         <v-list-item prepend-icon="mdi-home-group" title="Ruangan" value="rooms" :active="$route.path === '/ruangan'"
           @click="navigateTo('/ruangan')" class="mb-1 glass-list-item">
         </v-list-item>
-
+        
         <!-- Alat -->
         <v-list-item prepend-icon="mdi-devices" title="Alat" value="devices" :active="$route.path === '/alat'"
           @click="navigateTo('/alat')" class="mb-1 glass-list-item">
         </v-list-item>
 
         <!-- Sensor -->
-        <v-list-item prepend-icon="mdi-chip" title="Sensor" value="sensors" :active="$route.path === '/sensor'"
+        <v-list-item prepend-icon="mdi-thermometer" title="Sensor" value="sensors" :active="$route.path === '/sensor'"
           @click="navigateTo('/sensor')" class="mb-1 glass-list-item">
         </v-list-item>
       </v-list>
