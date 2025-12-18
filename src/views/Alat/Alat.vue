@@ -15,13 +15,14 @@
         <v-card-text>
             <v-row dense class="mb-4">
                 <v-col cols="12" md="6">
-                    <v-text-field v-model="search" density="comfortable" variant="outlined" label="Cari Alat"
-                        prepend-inner-icon="mdi-magnify" clearable hide-details></v-text-field>
+                    <v-text-field v-model="search" density="comfortable" variant="outlined" label="Cari"
+                        prepend-inner-icon="mdi-magnify" clearable hide-details/>
                 </v-col>
 
                 <v-col cols="12" md="6">
-                    <v-text-field v-model="filterById" density="comfortable" variant="outlined" label="Filter by ID"
-                        type="number" prepend-inner-icon="mdi-filter" clearable hide-details></v-text-field>
+                    <v-select v-model="filterByName" :items="alatOptions" item-title="text" item-value="value"
+                        density="comfortable" variant="outlined" label="Filter Nama Alat"
+                        prepend-inner-icon="mdi-filter" clearable hide-details />
                 </v-col>
             </v-row>
 
@@ -46,13 +47,14 @@
 
                 <template #item.nama_alat="{ item }">
                     <div class="d-flex align-center">
+                        <v-icon icon="mdi-devices" size="small" color="primary" class="me-2 align-self-center" />
                         <span class="font-weight-medium">{{ item.nama_alat }}</span>
                     </div>
                 </template>
 
-                <template #item.id_ruangan="{ item }">
+                <template #item.nama_ruangan="{ item }">
                     <v-chip color="secondary" size="small" variant="outlined">
-                        Ruangan {{ item.id_ruangan }}
+                        {{ item.nama_ruangan }}
                     </v-chip>
                 </template>
 
@@ -110,6 +112,7 @@
         </v-card>
     </v-dialog>
 
+    <!-- Dialog Delete -->
     <v-dialog v-model="dialogDelete" max-width="400">
         <v-card>
             <v-card-title class="text-h6">
@@ -130,6 +133,7 @@
         </v-card>
     </v-dialog>
 
+    <!-- Snackbar -->
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000">
         {{ snackbarText }}
         <template v-slot:actions>
@@ -143,7 +147,8 @@ import { onMounted, ref, computed } from 'vue'
 import { deviceAPI } from '@/services/api'
 
 const search = ref('')
-const filterById = ref(null)
+const filterByName = ref(null)
+
 const dialog = ref(false)
 const dialogDelete = ref(false)
 const editMode = ref(false)
@@ -151,18 +156,18 @@ const loadingSubmit = ref(false)
 const loadingRuangan = ref(false)
 const itemToDelete = ref(null)
 
-// Variabel untuk header
 const headers = [
-    { title: 'ID', key: 'id', width: '100px' },
+    { title: 'ID', key: 'id' },
     { title: 'Nama Alat', key: 'nama_alat' },
-    { title: 'ID Ruangan', key: 'id_ruangan', width: '150px' },
+    { title: 'Ruangan', key: 'nama_ruangan' },
     { title: 'Dibuat', key: 'created_at' },
     { title: 'Diupdate', key: 'updated_at' },
-    { title: 'Aksi', key: 'actions', sortable: false, width: '120px' }
+    { title: 'Aksi', key: 'actions', sortable: false }
 ]
 
 const alatList = ref([])
 const ruanganList = ref([])
+const ruanganMap = ref(new Map())
 const loading = ref(false)
 
 const formData = ref({
@@ -175,38 +180,81 @@ const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref('success')
 
+const alatOptions = computed(() => {
+    const names = [...new Set(alatList.value.map(a => a.nama_alat))]
+
+    names.sort((a, b) => a.localeCompare(b, 'id'))
+
+    return names.map(name => ({
+        text: name,
+        value: name
+    }))
+})
+
 const filteredAlatList = computed(() => {
-    const q = filterById.value
-    if (q === null || q === undefined || String(q).trim() === '') {
-        return alatList.value
+    let items = alatList.value
+
+    if (filterByName.value) {
+        items = items.filter(alat => alat.nama_alat === filterByName.value)
     }
 
-    const numeric = Number(q)
-    return alatList.value.filter(alat => Number(alat.id) === numeric)
+    return items
 })
+
+const formatDate = (dateString) => {
+    try {
+        const date = new Date(dateString)
+
+        if (isNaN(date.getTime())) {
+            console.error('Invalid date:', dateString)
+            return 'Invalid Date'
+        }
+
+        return date.toLocaleDateString("id-ID", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        })
+    } catch (error) {
+        console.error('Error formatting date:', error, dateString)
+        return 'Invalid Date'
+    }
+}
 
 const getAlat = async () => {
     loading.value = true
 
     try {
         console.log('Fetching alat from API...')
+        const [alatResponse, ruanganResponse] = await Promise.all([
+            deviceAPI.getAllDevices(),
+            deviceAPI.getAllRuangan()
+        ])
 
-        const response = await deviceAPI.getAllDevices()
+        console.log('API Response:', alatResponse.data)
 
-        console.log('API Response:', response.data)
+        // Build ruangan map
+        if (ruanganResponse.data.success) {
+            ruanganMap.value.clear()
+            ruanganResponse.data.data.forEach(ruangan => {
+                ruanganMap.value.set(ruangan.id, ruangan.nama_ruangan)
+            })
+        }
 
-        if (response.data.success) {
-            alatList.value = response.data.data.map(alat => ({
+        if (alatResponse.data.success) {
+            alatList.value = alatResponse.data.data.map(alat => ({
                 ...alat,
-                created_at: new Date(alat.created_at).toLocaleString('id-ID'),
-                updated_at: new Date(alat.updated_at).toLocaleString('id-ID')
+                nama_ruangan: ruanganMap.value.get(alat.id_ruangan) || `Ruangan ${alat.id_ruangan}`,
+                created_at: formatDate(alat.created_at),
+                updated_at: formatDate(alat.updated_at)
             }))
 
             console.log('Alat loaded:', alatList.value.length)
             console.log('Data:', alatList.value)
         } else {
             console.error('API returned success: false')
-            console.error('Response:', response.data)
+            console.error('Response:', alatResponse.data)
         }
     } catch (error) {
         console.error('Error fetching alat:', error)

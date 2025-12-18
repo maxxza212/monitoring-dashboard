@@ -15,13 +15,14 @@
         <v-card-text>
             <v-row dense class="mb-4">
                 <v-col cols="12" md="6">
-                    <v-text-field v-model="search" density="comfortable" variant="outlined" label="Cari Ruangan"
-                        prepend-inner-icon="mdi-magnify" clearable hide-details></v-text-field>
+                    <v-text-field v-model="search" density="comfortable" variant="outlined" label="Cari"
+                        prepend-inner-icon="mdi-magnify" clearable hide-details />
                 </v-col>
 
                 <v-col cols="12" md="6">
-                    <v-text-field v-model="filterById" density="comfortable" variant="outlined" label="Filter by ID"
-                        type="number" prepend-inner-icon="mdi-filter" clearable hide-details></v-text-field>
+                    <v-select v-model="filterByName" :items="ruanganOptions" item-title="text" item-value="value"
+                        density="comfortable" variant="outlined" label="Filter Nama Ruangan"
+                        prepend-inner-icon="mdi-filter" clearable hide-details />
                 </v-col>
             </v-row>
 
@@ -46,7 +47,7 @@
 
                 <template #item.nama_ruangan="{ item }">
                     <div class="d-flex align-center">
-                        <v-icon icon="mdi-door" size="small" class="me-2"></v-icon>
+                        <v-icon icon="mdi-map-marker" size="small" color="red" class="me-1" />
                         <span class="font-weight-medium">{{ item.nama_ruangan }}</span>
                     </div>
                 </template>
@@ -134,7 +135,7 @@ import { onMounted, ref, computed } from 'vue'
 import { deviceAPI } from '@/services/api'
 
 const search = ref('')
-const filterById = ref(null)
+const filterByName = ref(null)
 const dialog = ref(false)
 const dialogDelete = ref(false)
 const editMode = ref(false)
@@ -161,17 +162,47 @@ const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref('success')
 
-const filteredRuanganList = computed(() => {
-    const q = filterById.value
-    if (q === null || q === undefined || String(q).trim() === '') {
-        return ruanganList.value
-    }
+const ruanganOptions = computed(() => {
+    const names = [...new Set(ruanganList.value.map(r => r.nama_ruangan))]
 
-    const numeric = Number(q)
-    return ruanganList.value.filter(ruangan => Number(ruangan.id) === numeric)
+    names.sort((a, b) => a.localeCompare(b, 'id'))
+
+    return names.map(name => ({
+        text: name,
+        value: name
+    }))
 })
 
-// Get Ruangan 
+const filteredRuanganList = computed(() => {
+    let items = ruanganList.value
+    if (filterByName.value) {
+        items = items.filter(ruangan => ruangan.nama_ruangan === filterByName.value)
+    }
+
+    return items
+})
+
+const formatDate = (dateString) => {
+    try {
+        const date = new Date(dateString)
+
+        if (isNaN(date.getTime())) {
+            console.error('Invalid date:', dateString)
+            return 'Invalid Date'
+        }
+
+        return date.toLocaleDateString("id-ID", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        })
+    } catch (error) {
+        console.error('Error formatting date:', error, dateString)
+        return 'Invalid Date'
+    }
+}
+
 const getRuangan = async () => {
     loading.value = true
 
@@ -183,8 +214,8 @@ const getRuangan = async () => {
         if (response.data.success) {
             ruanganList.value = response.data.data.map(ruangan => ({
                 ...ruangan,
-                created_at: new Date(ruangan.created_at).toLocaleString('id-ID'),
-                updated_at: new Date(ruangan.updated_at).toLocaleString('id-ID')
+                created_at: formatDate(ruangan.created_at),
+                updated_at: formatDate(ruangan.updated_at)
             }))
 
             console.log('Ruangan loaded:', ruanganList.value.length)
@@ -305,4 +336,4 @@ onMounted(async () => {
     font-weight: 600;
     background-color: rgb(var(--v-theme-surface));
 }
-</style>
+</style>    
