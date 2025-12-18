@@ -1,7 +1,7 @@
 <template>
     <v-card>
         <v-card-title class="d-flex align-center pe-2">
-            <v-icon icon="mdi-door" class="me-2"></v-icon>
+            <v-icon icon="mdi-home-group" class="me-2"></v-icon>
             <span class="text-h6">Daftar Ruangan</span>
             <v-spacer></v-spacer>
             <v-btn prepend-icon="mdi-plus" @click="openDialogAdd"
