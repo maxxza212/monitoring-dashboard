@@ -1,4 +1,3 @@
-<!-- src/App.vue -->
 <template>
   <v-app>
     <v-navigation-drawer v-model="drawer" app width="280" class="glass-drawer" :style="drawerStyle">
@@ -25,14 +24,14 @@
           </template>
         </v-list-item>
 
-        <!-- Alat -->
-        <v-list-item prepend-icon="mdi-devices" title="Alat" value="devices" :active="$route.path === '/alat'"
-          @click="navigateTo('/alat')" class="mb-1 glass-list-item">
-        </v-list-item>
-
         <!-- Ruangan -->
         <v-list-item prepend-icon="mdi-home-group" title="Ruangan" value="rooms" :active="$route.path === '/ruangan'"
           @click="navigateTo('/ruangan')" class="mb-1 glass-list-item">
+        </v-list-item>
+
+        <!-- Alat -->
+        <v-list-item prepend-icon="mdi-devices" title="Alat" value="devices" :active="$route.path === '/alat'"
+          @click="navigateTo('/alat')" class="mb-1 glass-list-item">
         </v-list-item>
 
         <!-- Sensor -->
@@ -61,7 +60,6 @@ const { devices, fetchDevices } = useDevices()
 
 const drawer = ref(true)
 
-// Device count untuk badge
 const deviceCount = computed(() => devices.value.length)
 
 const drawerStyle = {
@@ -72,7 +70,6 @@ const drawerStyle = {
   boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
 }
 
-// Navigation
 const navigateTo = (path) => {
   router.push(path)
 }
