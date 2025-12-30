@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from "axios";
 
 const API_BASE_URL = 'http://10.107.108.22:6003/api'
@@ -106,6 +105,23 @@ export const deviceAPI = {
         return apiClient.get('/kelembapan', {
             params: { page, per_page: perPage }
         })
+    },
+
+    // BATASAN 
+    getAllBatasan() {
+        return apiClient.get('/batasan')
+    },
+    getBatasanBySensorId(sensorId) {
+        return apiClient.get(`/batasan/${sensorId}`)
+    },
+    createBatasan(data) {
+        return apiClient.post('/batasan', data)
+    },
+    updateBatasan(id, data) {
+        return apiClient.put(`/batasan/${id}`, data)
+    },
+    deleteBatasan(id) {
+        return apiClient.delete(`/batasan/${id}`)
     },
 }
 

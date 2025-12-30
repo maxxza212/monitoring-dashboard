@@ -1,39 +1,32 @@
 import { ref } from 'vue'
 import { deviceAPI } from '@/services/api'
+import { useBatasan } from '@/composables/useBatasan'
 
 const devices = ref([])
 const sensors = ref([])
+const sensorsByDevice = ref(new Map())
 const loading = ref(false)
 const error = ref(null)
 
 export function useDevices() {
-    // Fetch devices dengan sensor data
+    const { loadAllBatasan, getBatasanBySensorId, isSuhuNormal, isKelembapanNormal } = useBatasan()
+
     const fetchDevices = async () => {
         loading.value = true
         error.value = null
 
         try {
-            // console.log('Fetching devices from API...')
+            await loadAllBatasan()
 
-            // 1. Fetch alat
             const alatResponse = await deviceAPI.getAllDevices()
-
-            // 2. Fetch ruangan
             const ruanganResponse = await deviceAPI.getAllRuangan()
-
-            // 3. Fetch sensors
             const sensorsResponse = await deviceAPI.getAllSensors()
-
-            // 4. Fetch suhu
             const suhuResponse = await deviceAPI.getAllSuhu()
-
-            // 5. Fetch kelembapan
             const kelembapanResponse = await deviceAPI.getAllKelembapan()
 
             console.log('alat response', alatResponse.data.data)
 
             if (alatResponse.data.success) {
-                // Buat map ruangan
                 const ruanganMap = new Map()
                 if (ruanganResponse.data.success) {
                     ruanganResponse.data.data.forEach(ruangan => {
@@ -41,63 +34,55 @@ export function useDevices() {
                     })
                 }
 
-                // Buat map sensors by alat_id
-                const sensorsByAlat = new Map()
+                const sensorsByAlatTemp = new Map()
                 if (sensorsResponse.data.success) {
+                    sensors.value = sensorsResponse.data.data
+
                     sensorsResponse.data.data.forEach(sensor => {
-                        if (!sensorsByAlat.has(sensor.id_alat)) {
-                            sensorsByAlat.set(sensor.id_alat, [])
+                        if (!sensorsByAlatTemp.has(sensor.id_alat)) {
+                            sensorsByAlatTemp.set(sensor.id_alat, [])
                         }
-                        sensorsByAlat.get(sensor.id_alat).push(sensor)
+                        sensorsByAlatTemp.get(sensor.id_alat).push(sensor)
                     })
+
+                    sensorsByAlatTemp.forEach((sensorList) => {
+                        sensorList.sort((a, b) => a.id - b.id)
+                    })
+
+                    sensorsByDevice.value = sensorsByAlatTemp
+                    console.log('Sensors map built:', sensorsByDevice.value)
                 }
 
-                // Ambil data suhu dan kelembapan
                 const suhuData = suhuResponse.data.success ? suhuResponse.data.data.data : []
                 const kelembapanData = kelembapanResponse.data.success ? kelembapanResponse.data.data.data : []
 
-                console.log(devices.value)
+                console.log('Devices data:', devices.value)
 
-
-                // Map data alat dengan sensor data
                 devices.value = alatResponse.data.data.map(alat => {
-                    const alatSensors = sensorsByAlat.get(alat.id) || []
+                    const alatSensors = sensorsByAlatTemp.get(alat.id) || []
 
-                    // SORT SENSORS BY ID (ascending: ID terkecil = Sensor 1)
-                    alatSensors.sort((a, b) => a.id - b.id)
-                    const sensor1 = alatSensors[0] // Sensor dengan ID terkecil
-                    const sensor2 = alatSensors[1] // Sensor dengan ID berikutnya
+                    const sensor1 = alatSensors[0]
+                    const sensor2 = alatSensors[1]
 
-                    // console.log(`Device ${alat.id}:`, {
-                    //     sensor1_id: sensor1?.id,
-                    //     sensor2_id: sensor2?.id
-                    // })
-
-                    // Ambil data suhu terbaru untuk sensor 1 dan 2
                     const suhu1Data = suhuData.find(s => s.id_sensor === sensor1?.id)
                     const suhu2Data = suhuData.find(s => s.id_sensor === sensor2?.id)
 
-                    // Ambil data kelembapan terbaru untuk sensor 1 dan 2
                     const kelembapan1Data = kelembapanData.find(k => k.id_sensor === sensor1?.id)
                     const kelembapan2Data = kelembapanData.find(k => k.id_sensor === sensor2?.id)
 
-                    // console.log(`Device ${alat.id} sensor values:`, {
-                    //     suhu1: suhu1Data?.nilai_suhu,
-                    //     suhu2: suhu2Data?.nilai_suhu,
-                    //     kelembapan1: kelembapan1Data?.nilai_kelembapan,
-                    //     kelembapan2: kelembapan2Data?.nilai_kelembapan
-                    // })
-
-                    // Cek kategori berdasarkan sensor data
                     let kategori = 'Normal'
-                    if (suhu1Data && suhu2Data && kelembapan1Data && kelembapan2Data) {
-                        const sensorDataCheck = {
-                            suhu1: parseFloat(suhu1Data.nilai_suhu),
-                            suhu2: parseFloat(suhu2Data.nilai_suhu),
-                            kelembapan1: parseFloat(kelembapan1Data.nilai_kelembapan),
-                            kelembapan2: parseFloat(kelembapan2Data.nilai_kelembapan),
-                        }
-                        kategori = checkSensorNormal(sensorDataCheck)
+                    if (sensor1 && sensor2 && suhu1Data && suhu2Data && kelembapan1Data && kelembapan2Data) {
+                        const sensor1Normal = isSuhuNormal(sensor1.id, parseFloat(suhu1Data.nilai_suhu)) &&
+                            isKelembapanNormal(sensor1.id, parseFloat(kelembapan1Data.nilai_kelembapan))
+
+                        const sensor2Normal = isSuhuNormal(sensor2.id, parseFloat(suhu2Data.nilai_suhu)) &&
+                            isKelembapanNormal(sensor2.id, parseFloat(kelembapan2Data.nilai_kelembapan))
+
+                        kategori = (sensor1Normal && sensor2Normal) ? 'Normal' : 'Tidak Normal'
+                    } else if (sensor1 && suhu1Data && kelembapan1Data) {
+                        const sensor1Normal = isSuhuNormal(sensor1.id, parseFloat(suhu1Data.nilai_suhu)) &&
+                            isKelembapanNormal(sensor1.id, parseFloat(kelembapan1Data.nilai_kelembapan))
+                        kategori = sensor1Normal ? 'Normal' : 'Tidak Normal'
                     }
 
                     return {
@@ -105,24 +90,22 @@ export function useDevices() {
                         name: alat.nama_alat,
                         location: ruanganMap.get(alat.id_ruangan) || `Ruangan ${alat.id_ruangan}`,
                         kategori: kategori,
-                        // Tambahkan data sensor
                         suhu1: suhu1Data?.nilai_suhu ? parseFloat(suhu1Data.nilai_suhu).toFixed(1) : undefined,
                         suhu2: suhu2Data?.nilai_suhu ? parseFloat(suhu2Data.nilai_suhu).toFixed(1) : undefined,
                         kelembapan1: kelembapan1Data?.nilai_kelembapan ? parseFloat(kelembapan1Data.nilai_kelembapan).toFixed(1) : undefined,
                         kelembapan2: kelembapan2Data?.nilai_kelembapan ? parseFloat(kelembapan2Data.nilai_kelembapan).toFixed(1) : undefined,
+                        sensor1_id: sensor1?.id,
+                        sensor1_name: sensor1?.nama_sensor,
+                        sensor2_id: sensor2?.id,
+                        sensor2_name: sensor2?.nama_sensor,
                     }
                 })
-
-                
-                // console.log('Devices with sensor data loaded:', devices.value)
             }
 
             return devices.value
         } catch (err) {
+            console.log('Error fetching devices:', err)
             error.value = err.response?.data?.message || err.message
-            // console.error('Error fetching devices:', err)
-
-            // Fallback: Gunakan data dari sensors
             await fetchSensorsAsFallback()
             return devices.value
         } finally {
@@ -130,7 +113,6 @@ export function useDevices() {
         }
     }
 
-    // Fallback: Gunakan data sensor untuk membuat device list
     const fetchSensorsAsFallback = async () => {
         try {
             const response = await deviceAPI.getAllSensors()
@@ -138,7 +120,6 @@ export function useDevices() {
             if (response.data.success) {
                 sensors.value = response.data.data
 
-                // Group sensors by id_alat
                 const deviceMap = new Map()
 
                 response.data.data.forEach(sensor => {
@@ -158,30 +139,18 @@ export function useDevices() {
                 })
 
                 devices.value = Array.from(deviceMap.values())
-                // console.log('Devices created from sensors:', devices.value)
+                console.log('Devices created from sensors:', devices.value)
             }
         } catch (err) {
-            // console.error('Error fetching sensors:', err)
-            // Final fallback: dummy data
-            // devices.value = [
-            //     { id_alat: 1, name: 'ESP32 Board 1', location: 'Ruang Server', suhu1: '3', suhu2: '25', kelembapan1: '50', kelembapan2: '50', kategori: 'Normal' },
-            //     { id_alat: 2, name: 'ESP32 Board 2', location: 'Ruang Lab Komputer', suhu1: '2', suhu2: '25', kelembapan1: '50', kelembapan2: '50', kategori: 'Normal' },
-            // ]
+            console.error('Error fetching sensors:', err)
         }
     }
 
-    // Get device by ID
     const getDeviceById = (id) => {
         const numericId = parseInt(id)
         return devices.value.find(d => d.id_alat == numericId)
     }
-    // const getDeviceById = (id) => {
-    //     const numericId = Number(id)
-    //     return devices.value.find(d => Number(d.id_alat) === numericId)
-    // }
 
-
-    // Fetch device detail dari API
     const fetchDeviceById = async (id) => {
         loading.value = true
         error.value = null
@@ -192,7 +161,6 @@ export function useDevices() {
             if (alatResponse.data.success) {
                 const alat = alatResponse.data.data
 
-                // Ambil nama ruangan jika ada
                 let namaRuangan = `Ruangan ${alat.id_ruangan}`
                 try {
                     const ruanganResponse = await deviceAPI.getRuanganById(alat.id_ruangan)
@@ -218,19 +186,33 @@ export function useDevices() {
         }
     }
 
-    // Update kategori device
-    const updateDeviceKategori = (deviceId, sensorData) => {
+    const updateDeviceKategori = async (deviceId, sensorData, sensorId = null) => {
         const numericId = parseInt(deviceId)
         const device = devices.value.find(d => d.id_alat === numericId)
         if (!device) return
 
-        const kategori = checkSensorNormal(sensorData)
-        device.kategori = kategori
+        const suhuVal = sensorData.suhu2 || sensorData.suhu1 || 0
+        const kelembapanVal = sensorData.kelembapan2 || sensorData.kelembapan1 || 0
+
+        if (sensorId) {
+            const suhuNormal = isSuhuNormal(sensorId, suhuVal)
+            const kelembapanNormal = isKelembapanNormal(sensorId, kelembapanVal)
+            device.kategori = (suhuNormal && kelembapanNormal) ? 'Normal' : 'Tidak Normal'
+        } else {
+            const batasan = getBatasanBySensorId(0)
+            if (batasan) {
+                const suhuNormal = suhuVal >= batasan.suhu_min && suhuVal <= batasan.suhu_max
+                const kelembapanNormal = kelembapanVal >= batasan.kelembapan_min && kelembapanVal <= batasan.kelembapan_max
+
+                device.kategori = (suhuNormal && kelembapanNormal) ? 'Normal' : 'Tidak Normal'
+            }
+        }
     }
 
     return {
         devices,
         sensors,
+        sensorsByDevice,
         loading,
         error,
         fetchDevices,
@@ -238,24 +220,4 @@ export function useDevices() {
         fetchDeviceById,
         updateDeviceKategori
     }
-}
-
-// Cek sensor normal
-function checkSensorNormal(sensorData) {
-    // Satu range universal untuk semua device
-    const ranges = {
-   
-        suhu2: { min: 1, max: 25 },
-        // kelembapan1: { min: 45, max: 60 },
-        kelembapan2: { min: 45, max: 60 },
-    }
-
-    const checks = [
-        sensorData.suhu1 >= ranges.suhu1.min && sensorData.suhu1 <= ranges.suhu1.max,
-        sensorData.suhu2 >= ranges.suhu2.min && sensorData.suhu2 <= ranges.suhu2.max,
-        sensorData.kelembapan1 >= ranges.kelembapan1.min && sensorData.kelembapan1 <= ranges.kelembapan1.max,
-        sensorData.kelembapan2 >= ranges.kelembapan2.min && sensorData.kelembapan2 <= ranges.kelembapan2.max,
-    ]
-
-    return checks.every(check => check) ? 'Normal' : 'Tidak Normal'
 }

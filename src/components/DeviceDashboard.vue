@@ -1,15 +1,13 @@
 <template>
     <v-card class="pa-4">
-        <!-- Header dengan Kategori -->
         <v-card-title class="d-flex justify-space-between align-center flex-wrap">
             <span class="text-h6 font-weight-bold">
                 {{ device.name }} — {{ device.location }}
             </span>
         </v-card-title>
 
-        <!-- Card Data Sensor -->
         <v-row>
-            <v-col v-for="card in sensorCards" :key="card.title" cols="12" sm="6" md="3">
+            <v-col v-for="card in sensorCards" :key="card.title" cols="12" sm="6">
                 <v-card :class="card.gradientClass" class="text-center py-4 sensor-card">
                     <v-icon size="36" class="mb-2 card-icon">{{ card.icon }}</v-icon>
                     <div class="text-h6 card-text">{{ card.title }}</div>
@@ -18,7 +16,6 @@
             </v-col>
         </v-row>
 
-        <!-- Grafik -->
         <v-card class="mt-6 pa-4">
             <v-card-title class="text-subtitle-1 font-weight-bold mb-2">
                 Grafik Realtime Sensor
@@ -35,6 +32,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, shallowRef,
 import Chart from 'chart.js/auto'
 import { useDevices } from '@/composables/useDevices'
 import { useSensorData } from '@/composables/useSensorData'
+import { useBatasan } from '@/composables/useBatasan'
 
 const props = defineProps({
     device: {
@@ -44,45 +42,32 @@ const props = defineProps({
 })
 
 const { updateDeviceKategori } = useDevices()
-const { fetchSensorData } = useSensorData(props.device.id_alat)
+const { fetchSensorData, deviceSensors } = useSensorData(props.device.id_alat)
+const { loadAllBatasan, getBatasanBySensorId, isSuhuNormal, isKelembapanNormal } = useBatasan()
 
 const chartCanvas = ref(null)
 const chart = shallowRef(null)
 const sensorCards = ref([])
 const isUsingAPI = ref(false)
+const currentSensorId = ref(null)
 
 const chartData = ref({
     labels: [],
-    suhu1: [],
-    suhu2: [],
-    kelembapan1: [],
-    kelembapan2: [],
+    suhu: [],
+    kelembapan: [],
 })
 
 let interval = null
 
 const deviceKategori = computed(() => {
-    const allNormal = sensorCards.value.every(card => card.isNormal !== false)
+    const allNormal = sensorCards.value.every(card => card.status === 'Normal')
     return allNormal ? 'Normal' : 'Tidak Normal'
 })
-
-// Range UNIVERSAL untuk semua device
-const normalRanges = {
-    suhu1: { min: 2, max: 8 },
-    suhu2: { min: 1, max: 25 },
-    // kelembapan1: { min: 45, max: 60 },
-    kelembapan2: { min: 45, max: 60 },
-}
-
-function isValueNormal(value, sensorType) {
-    const range = normalRanges[sensorType]
-    if (!range) return true
-    return value >= range.min && value <= range.max
-}
 
 async function updateData() {
     try {
         console.log('Fetching new data from API...')
+        console.log('DEBUG deviceSensors (raw):', deviceSensors)
 
         const apiData = await fetchSensorData()
 
@@ -90,11 +75,15 @@ async function updateData() {
             console.log('Data received from API:', apiData)
             isUsingAPI.value = true
 
+            if (deviceSensors && deviceSensors.value && deviceSensors.value.length > 0) {
+                currentSensorId.value = deviceSensors.value[0].id
+            } else {
+                console.warn('deviceSensors undefined or empty, cannot read first sensor id')
+                currentSensorId.value = null
+            }
             const data = {
-                suhu1: parseFloat(apiData.suhu1).toFixed(1),
-                suhu2: parseFloat(apiData.suhu2).toFixed(1),
-                kelembapan1: parseFloat(apiData.kelembapan1).toFixed(1),
-                kelembapan2: parseFloat(apiData.kelembapan2).toFixed(1),
+                suhu: parseFloat(apiData.suhu1 ?? apiData.suhu2 ?? 0).toFixed(1),
+                kelembapan: parseFloat(apiData.kelembapan1 ?? apiData.kelembapan2 ?? 0).toFixed(1),
             }
 
             updateDataDisplay(data)
@@ -109,66 +98,69 @@ async function updateData() {
 }
 
 function updateDataDisplay(data) {
+    const defaultBatasan = { suhu_min: 2, suhu_max: 8, kelembapan_min: 45, kelembapan_max: 60 }
+    let batasan = defaultBatasan
+
+    if (currentSensorId.value) {
+        const fetched = getBatasanBySensorId(currentSensorId.value)
+        batasan = fetched || defaultBatasan
+    }
+
+    const suhuVal = parseFloat(data.suhu)
+    const kelembapanVal = parseFloat(data.kelembapan)
+
+    const suhuStatus = currentSensorId.value
+        ? (typeof isSuhuNormal === 'function' && isSuhuNormal(currentSensorId.value, suhuVal) ? 'Normal' : 'Tidak Normal')
+        : 'Normal'
+
+    const kelembapanStatus = currentSensorId.value
+        ? (typeof isKelembapanNormal === 'function' && isKelembapanNormal(currentSensorId.value, kelembapanVal) ? 'Normal' : 'Tidak Normal')
+        : 'Normal'
+
     sensorCards.value = [
         {
-            title: 'Suhu 1',
-            value: `${data.suhu1} °C`,
+            title: 'Suhu',
+            value: `${data.suhu} °C`,
             icon: 'mdi-thermometer',
             gradientClass: 'gradient-blue',
-            isNormal: isValueNormal(parseFloat(data.suhu1), 'suhu1')
+            unit: '°C',
+            range: { min: batasan.suhu_min, max: batasan.suhu_max },
+            status: suhuStatus
         },
         {
-            title: 'Suhu 2',
-            value: `${data.suhu2} °C`,
-            icon: 'mdi-thermometer',
-            gradientClass: 'gradient-orange',
-            isNormal: isValueNormal(parseFloat(data.suhu2), 'suhu2')
-        },
-        {
-            title: 'Kelembapan 1',
-            value: `${data.kelembapan1}%`,
-            icon: 'mdi-water-percent',
-            gradientClass: 'gradient-purple',
-            isNormal: isValueNormal(parseFloat(data.kelembapan1), 'kelembapan1')
-        },
-        {
-            title: 'Kelembapan 2',
-            value: `${data.kelembapan2}%`,
+            title: 'Kelembapan',
+            value: `${data.kelembapan}%`,
             icon: 'mdi-water-percent',
             gradientClass: 'gradient-teal',
-            isNormal: isValueNormal(parseFloat(data.kelembapan2), 'kelembapan2')
+            unit: '%',
+            range: { min: batasan.kelembapan_min, max: batasan.kelembapan_max },
+            status: kelembapanStatus
         },
     ]
 
     updateDeviceKategori(props.device.id_alat, {
-        suhu1: parseFloat(data.suhu1),
-        suhu2: parseFloat(data.suhu2),
-        kelembapan1: parseFloat(data.kelembapan1),
-        kelembapan2: parseFloat(data.kelembapan2),
+        suhu1: suhuVal,
+        suhu2: 0,
+        kelembapan1: kelembapanVal,
+        kelembapan2: 0,
     })
 
     const time = new Date().toLocaleTimeString()
     chartData.value.labels.push(time)
-    chartData.value.suhu1.push(parseFloat(data.suhu1))
-    chartData.value.suhu2.push(parseFloat(data.suhu2))
-    chartData.value.kelembapan1.push(parseFloat(data.kelembapan1))
-    chartData.value.kelembapan2.push(parseFloat(data.kelembapan2))
+    chartData.value.suhu.push(suhuVal)
+    chartData.value.kelembapan.push(kelembapanVal)
 
     if (chartData.value.labels.length > 10) {
         chartData.value.labels.shift()
-        chartData.value.suhu1.shift()
-        chartData.value.suhu2.shift()
-        chartData.value.kelembapan1.shift()
-        chartData.value.kelembapan2.shift()
+        chartData.value.suhu.shift()
+        chartData.value.kelembapan.shift()
     }
 
     if (chart.value) {
         const c = chart.value
         c.data.labels = chartData.value.labels.slice()
-        c.data.datasets[0].data = chartData.value.suhu1.slice()
-        c.data.datasets[1].data = chartData.value.suhu2.slice()
-        c.data.datasets[2].data = chartData.value.kelembapan1.slice()
-        c.data.datasets[3].data = chartData.value.kelembapan2.slice()
+        c.data.datasets[0].data = chartData.value.suhu.slice()
+        c.data.datasets[1].data = chartData.value.kelembapan.slice()
         c.update()
     }
 }
@@ -188,36 +180,22 @@ function createChart() {
             labels: [],
             datasets: [
                 {
-                    label: 'Suhu 1 (°C)',
+                    label: 'Suhu (°C)',
                     data: [],
                     borderColor: 'rgb(59, 130, 246)',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     tension: 0.4,
-                    fill: false
+                    fill: false,
+                    yAxisID: 'y'
                 },
                 {
-                    label: 'Suhu 2 (°C)',
-                    data: [],
-                    borderColor: 'rgb(249, 115, 22)',
-                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                    tension: 0.4,
-                    fill: false
-                },
-                {
-                    label: 'Kelembapan 1 (%)',
-                    data: [],
-                    borderColor: 'rgb(99, 102, 241)',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    tension: 0.4,
-                    fill: false
-                },
-                {
-                    label: 'Kelembapan 2 (%)',
+                    label: 'Kelembapan (%)',
                     data: [],
                     borderColor: 'rgb(20, 184, 166)',
                     backgroundColor: 'rgba(20, 184, 166, 0.1)',
                     tension: 0.4,
-                    fill: false
+                    fill: false,
+                    yAxisID: 'y1'
                 },
             ],
         },
@@ -230,8 +208,26 @@ function createChart() {
             },
             scales: {
                 y: {
-                    beginAtZero: true,
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Suhu (°C)'
+                    },
                     grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Kelembapan (%)'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
                 },
                 x: {
                     grid: { color: 'rgba(0, 0, 0, 0.1)' }
@@ -239,19 +235,18 @@ function createChart() {
             },
         },
     }
-
     chart.value = markRaw(new Chart(ctx, config))
 }
 
-function initDashboard() {
+async function initDashboard() {
     if (!props.device) return
+
+    await loadAllBatasan()
 
     chartData.value = {
         labels: [],
-        suhu1: [],
-        suhu2: [],
-        kelembapan1: [],
-        kelembapan2: [],
+        suhu: [],
+        kelembapan: [],
     }
     sensorCards.value = []
 
@@ -279,7 +274,7 @@ onMounted(async () => {
 })
 
 watch(
-    () => props.device?.id_alat,  // Hapus props.device?.type
+    () => props.device?.id_alat,
     () => {
         teardown()
         nextTick().then(() => initDashboard())
@@ -292,7 +287,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Card styling */
 .sensor-card {
     position: relative;
     overflow: hidden;
@@ -304,7 +298,6 @@ onBeforeUnmount(() => {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Icon dan Text berwarna putih */
 .card-icon {
     color: #ffffff !important;
 }
@@ -313,17 +306,8 @@ onBeforeUnmount(() => {
     color: #ffffff !important;
 }
 
-/* Gradasi Modern */
 .gradient-blue {
     background: linear-gradient(135deg, #00005C 0%, #00D4FF 100%) !important;
-}
-
-.gradient-orange {
-    background: linear-gradient(135deg, #3A1C71 0%, #FDBB2D 100%) !important;
-}
-
-.gradient-purple {
-    background: linear-gradient(135deg, #3a47d5 0%, #00d2ff 100%) !important;
 }
 
 .gradient-teal {
