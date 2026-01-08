@@ -472,7 +472,7 @@ const submitForm = async () => {
 
             try {
                 if (formData.value.batasan_id) {
-                    await updateBatasan(formData.value.batasan_id, batasanData);
+                    await updateBatasan(formData.value.id, batasanData);
                 } else {
                     await createBatasan(batasanData);
                 }
