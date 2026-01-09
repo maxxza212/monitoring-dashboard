@@ -3,137 +3,158 @@
         <v-card-title>Daftar Sensor</v-card-title>
 
         <v-card-text>
+            <!-- SEARCH & FILTER -->
             <v-row dense class="mb-4">
                 <v-col cols="12" md="6">
-                    <v-text-field v-model="search" density="comfortable" variant="outlined" label="Cari"
-                        prepend-inner-icon="mdi-magnify" clearable hide-details/>
+                    <v-text-field v-model="search" label="Cari" prepend-inner-icon="mdi-magnify" variant="outlined"
+                        density="comfortable" clearable />
                 </v-col>
 
                 <v-col cols="12" md="6">
                     <v-select v-model="filterLocation" :items="locationOptions" item-title="text" item-value="value"
-                        density="comfortable" variant="outlined" label="Filter Lokasi"
-                        prepend-inner-icon="mdi-map-marker" clearable hide-details />
+                        label="Filter Lokasi" prepend-inner-icon="mdi-map-marker" variant="outlined"
+                        density="comfortable" clearable />
                 </v-col>
             </v-row>
 
-            <v-data-table :headers="headers" :items="filteredSensorItems" :search="search"
-                items-per-page="10" class="elevation-1">
+            <!-- TABLE -->
+            <v-data-table :headers="headers" :items="filteredSensorItems" :search="search" items-per-page="100"
+                :loading="loading">
                 <template #item.sensor_name="{ item }">
-                    <div class="sensor-name">
-                        <v-icon icon="mdi-thermometer" size="small" color="blue" class="me-1"></v-icon>
-                        {{ item.sensor_name }}
-                    </div>
+                    <v-icon size="small" color="blue" class="me-1">
+                        mdi-thermometer
+                    </v-icon>
+                    {{ item.sensor_name }}
                 </template>
 
                 <template #item.device_name="{ item }">
-                    <v-chip color="secondary" size="small" variant="outlined">
+                    <v-chip size="small" variant="outlined">
                         {{ item.device_name }}
                     </v-chip>
                 </template>
 
                 <template #item.location="{ item }">
-                    <div class="d-flex align-center">
-                        <v-icon icon="mdi-map-marker" size="small" color="red" class="me-1" />
-                        {{ item.location }}
-                    </div>
+                    <v-icon size="small" color="red" class="me-1">
+                        mdi-map-marker
+                    </v-icon>
+                    {{ item.location }}
                 </template>
 
                 <template #item.suhu="{ item }">
-                    <span v-if="item.suhu !== undefined" class="font-weight-bold">
+                    <strong v-if="item.suhu !== undefined">
                         {{ item.suhu }}°C
-                    </span>
-                    <span v-else class="text-grey">-</span>
+                    </strong>
+                    <span v-else>-</span>
                 </template>
 
                 <template #item.kelembapan="{ item }">
-                    <span v-if="item.kelembapan !== undefined" class="font-weight-bold">
+                    <strong v-if="item.kelembapan !== undefined">
                         {{ item.kelembapan }}%
-                    </span>
-                    <span v-else class="text-grey">-</span>
+                    </strong>
+                    <span v-else>-</span>
                 </template>
 
                 <template #item.status="{ item }">
-                    <v-chip :color="getStatusColor(item.status)" size="small"
+                    <v-chip size="small" :color="getStatusColor(item.status)"
                         :prepend-icon="getStatusIcon(item.status)">
                         {{ item.status }}
                     </v-chip>
                 </template>
 
                 <template #item.action="{ item }">
-                    <v-btn icon="mdi-eye" size="small" variant="text" color="info" @click="goToDeviceDetail(item)"
-                        title="Lihat Detail" />
-
+                    <v-btn icon="mdi-eye" variant="text" color="info" @click="goToDeviceDetail(item)" />
                     <v-menu>
                         <template #activator="{ props }">
-                            <v-btn icon="mdi-download" size="small" variant="text" color="primary" v-bind="props"
-                                title="Download Data" />
+                            <v-btn icon="mdi-download" variant="text" color="primary" v-bind="props" />
                         </template>
 
                         <v-list>
-                            <v-list-item v-for="option in downloadOptions" :key="option.value"
-                                @click="downloadData(item, option.value)">
+                            <v-list-item v-for="opt in downloadOptions" :key="opt.value"
+                                @click="downloadData(item, opt.value)">
                                 <template #prepend>
-                                    <v-icon>{{ option.icon }}</v-icon>
+                                    <v-icon>{{ opt.icon }}</v-icon>
                                 </template>
-                                <v-list-item-title>{{ option.text }}</v-list-item-title>
+                                <v-list-item-title>
+                                    {{ opt.text }}
+                                </v-list-item-title>
                             </v-list-item>
                         </v-list>
                     </v-menu>
                 </template>
 
-                <template #loading>
-                    <v-skeleton-loader type="table-row@5" />
-                </template>
-
                 <template #no-data>
-                    <div class="text-center py-8">
-                        <v-icon size="64" color="grey-lighten-1">
-                            mdi-folder-open
-                        </v-icon>
-                        <p class="text-h6 text-grey mt-4">
-                            Tidak ada data sensor
-                        </p>
+                    <div class="text-center py-6">
+                        <v-icon size="64">mdi-folder-open</v-icon>
+                        <div>Tidak ada data</div>
                     </div>
                 </template>
             </v-data-table>
         </v-card-text>
 
-        <v-dialog v-model="downloadDialog" max-width="400" persistent>
-            <v-card>
-                <v-card-text class="text-center pa-6">
-                    <v-progress-circular indeterminate color="primary" size="64" class="mb-4" />
-                    <div class="text-h6">Mengunduh data...</div>
-                    <div class="text-caption text-grey mt-2">{{ downloadStatus }}</div>
-                </v-card-text>
+        <!-- PROGRESS -->
+        <v-dialog v-model="downloadDialog" persistent max-width="360">
+            <v-card class="pa-6 text-center">
+                <v-progress-circular indeterminate size="64" />
+                <div class="mt-4">{{ downloadStatus }}</div>
             </v-card>
         </v-dialog>
 
+        <!-- DATE RANGE -->
+        <v-dialog v-model="dateRangeDialog" max-width="420">
+            <v-card>
+                <v-card-title>Pilih Rentang Tanggal</v-card-title>
+                <v-card-text>
+                    <v-date-picker v-model="dateRange" multiple="range" color="primary" />
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn text @click="dateRangeDialog = false">
+                        Batal
+                    </v-btn>
+                    <v-btn color="primary" @click="downloadByDateRange">
+                        Unduh
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- SNACKBAR -->
         <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000">
             {{ snackbarText }}
-            <template #actions>
-                <v-btn variant="text" @click="snackbar = false">Tutup</v-btn>
-            </template>
         </v-snackbar>
     </v-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDevices } from '@/composables/useDevices'
+import { useBatasan } from '@/composables/useBatasan'
 import { deviceAPI } from '@/services/api'
+import * as XLSX from 'xlsx'
 
+/* ================= STATE ================= */
 const router = useRouter()
-
-const { devices, loading } = useDevices()
-
 const search = ref('')
 const filterLocation = ref(null)
-const downloadDialog = ref(false)
-const downloadStatus = ref('')
+
 const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref('success')
+
+const downloadDialog = ref(false)
+const downloadStatus = ref('')
+
+const dateRangeDialog = ref(false)
+const dateRange = ref([])
+const selectedItem = ref(null)
+
+const { devices, loading } = useDevices()
+const { isSensorNormal, loadAllBatasan } = useBatasan()
+
+onMounted(() => {
+    loadAllBatasan()
+})
 
 const headers = [
     { title: 'Nama Sensor', key: 'sensor_name' },
@@ -145,243 +166,200 @@ const headers = [
     { title: 'Action', key: 'action', sortable: false }
 ]
 
-const sensorItems = computed(() => {
-    return devices.value.flatMap(device => {
+const sensorItems = computed(() =>
+    devices.value.flatMap(d => {
         const rows = []
-        if (device.sensor1_name) {
+
+        if (d.sensor1_id) {
+            let status = 'Normal'
+            if (d.suhu1 === undefined && d.kelembapan1 === undefined) {
+                status = 'Sensor Off'
+            } else if (!isSensorNormal(d.sensor1_id, d.suhu1, d.kelembapan1)) {
+                status = 'Tidak Normal'
+            }
+
             rows.push({
-                sensor_id: device.sensor1_id,
-                sensor_name: device.sensor1_name,
-                device_name: device.name,
-                device_id: device.id_alat,
-                location: device.location,
-                suhu: device.suhu1,
-                kelembapan: device.kelembapan1,
-                status: (device.suhu1 === undefined && device.kelembapan1 === undefined)
-                    ? 'Sensor Off'
-                    : device.kategori
+                sensor_id: d.sensor1_id,
+                sensor_name: d.sensor1_name,
+                device_name: d.name,
+                device_id: d.id_alat,
+                location: d.location,
+                suhu: d.suhu1,
+                kelembapan: d.kelembapan1,
+                status
             })
         }
 
-        if (device.sensor2_name) {
+        if (d.sensor2_id) {
+            let status = 'Normal'
+            if (d.suhu2 === undefined && d.kelembapan2 === undefined) {
+                status = 'Sensor Off'
+            } else if (!isSensorNormal(d.sensor2_id, d.suhu2, d.kelembapan2)) {
+                status = 'Tidak Normal'
+            }
+
             rows.push({
-                sensor_id: device.sensor2_id,
-                sensor_name: device.sensor2_name,
-                device_name: device.name,
-                device_id: device.id_alat,
-                location: device.location,
-                suhu: device.suhu2,
-                kelembapan: device.kelembapan2,
-                status: (device.suhu2 === undefined && device.kelembapan2 === undefined)
-                    ? 'Sensor Off'
-                    : device.kategori
+                sensor_id: d.sensor2_id,
+                sensor_name: d.sensor2_name,
+                device_name: d.name,
+                device_id: d.id_alat,
+                location: d.location,
+                suhu: d.suhu2,
+                kelembapan: d.kelembapan2,
+                status
             })
         }
 
         return rows
     })
-})
+)
 
-const locationOptions = computed(() => {
-    const locations = [...new Set(sensorItems.value.map(item => item.location))]
+const filteredSensorItems = computed(() =>
+    filterLocation.value
+        ? sensorItems.value.filter(i => i.location === filterLocation.value)
+        : sensorItems.value
+)
 
-    locations.sort((a, b) => a.localeCompare(b, 'id'))
-
-    return locations.map(loc => ({
-        text: loc,
-        value: loc
-    }))
-})
-
-const filteredSensorItems = computed(() => {
-    let items = sensorItems.value
-
-    if (filterLocation.value) {
-        items = items.filter(item => item.location === filterLocation.value)
-    }
-
-    return items
-})
-
-const goToDeviceDetail = (item) => {
-    if (item && item.device_id) {
-        router.push(`/device/${item.device_id}`)
-    }
-}
-
-const getStatusColor = (status) => {
-    if (status === 'Normal') return 'success'
-    if (status === 'Sensor Off') return 'grey'
-    return 'error'
-}
-
-const getStatusIcon = (status) => {
-    if (status === 'Normal') return 'mdi-check-circle'
-    if (status === 'Sensor Off') return 'mdi-help-circle'
-    return 'mdi-alert-circle'
-}
+const locationOptions = computed(() =>
+    [...new Set(sensorItems.value.map(i => i.location))]
+        .sort()
+        .map(v => ({ text: v, value: v }))
+)
 
 const downloadOptions = [
     { value: 1, text: '1 Jam Terakhir', icon: 'mdi-clock-outline' },
     { value: 3, text: '3 Jam Terakhir', icon: 'mdi-clock-outline' },
     { value: 6, text: '6 Jam Terakhir', icon: 'mdi-clock-outline' },
     { value: 24, text: '24 Jam Terakhir', icon: 'mdi-clock-outline' },
-    { value: 'all', text: 'Semua Data', icon: 'mdi-database' }
+    { value: 'range', text: 'Pilih Rentang Tanggal', icon: 'mdi-calendar-range' }
 ]
 
-const downloadData = async (item, hours) => {
-    if (!item.sensor_id) {
-        snackbarColor.value = 'error'
-        snackbarText.value = 'Sensor ID tidak valid'
-        snackbar.value = true
+const downloadData = (item, value) => {
+    if (value === 'range') {
+        selectedItem.value = item
+        dateRangeDialog.value = true
         return
     }
+    processDownload(item, value)
+}
 
-    if (item.status === 'Sensor Off') {
+const downloadByDateRange = () => {
+    if (!Array.isArray(dateRange.value) || dateRange.value.length !== 2) {
         snackbarColor.value = 'warning'
-        snackbarText.value = 'Sensor ini belum memiliki data untuk diunduh'
+        snackbarText.value = 'Pilih tanggal awal & akhir'
         snackbar.value = true
         return
     }
 
+    const [start, end] = dateRange.value
+
+    processDownload(selectedItem.value, {
+        start: new Date(`${start}T00:00:00`).getTime(),
+        end: new Date(`${end}T23:59:59`).getTime()
+    })
+
+    dateRangeDialog.value = false
+    dateRange.value = []
+}
+
+const processDownload = async (item, filter) => {
     downloadDialog.value = true
     downloadStatus.value = 'Mengambil data...'
 
-    try {
-        console.log(`Downloading data for sensor ${item.sensor_id} (${item.sensor_name}), period: ${hours}`)
+    const [suhuRes, kelembapanRes] = await Promise.all([
+        deviceAPI.getAllSuhu(),
+        deviceAPI.getAllKelembapan()
+    ])
 
-        downloadStatus.value = 'Mengambil semua data suhu dan kelembapan...'
+    const suhuData = suhuRes.data.data.data || []
+    const kelembapanData = kelembapanRes.data.data.data || []
 
-        const [suhuRes, kelembapanRes] = await Promise.all([
-            deviceAPI.getAllSuhu(),
-            deviceAPI.getAllKelembapan()
-        ])
+    let startMs = 0
+    let endMs = Date.now()
 
-        if (!suhuRes.data.success || !kelembapanRes.data.success) {
-            throw new Error('Gagal mengambil data sensor')
-        }
+    if (typeof filter === 'number') {
+        startMs = Date.now() - filter * 60 * 60 * 1000
+    } else {
+        startMs = filter.start
+        endMs = filter.end
+    }
 
-        const suhuData = suhuRes.data.data.data || []
-        const kelembapanData = kelembapanRes.data.data.data || []
+    const validTime = d => {
+        const t = new Date(d.created_at.replace(' ', 'T')).getTime()
+        return t >= startMs && t <= endMs
+    }
 
-        console.log(`Total data fetched - Suhu: ${suhuData.length}, Kelembapan: ${kelembapanData.length}`)
+    const suhuSheet = [['Timestamp', 'Sensor', 'Alat', 'Lokasi', 'Nilai', 'Satuan']]
+    const kelembapanSheet = [['Timestamp', 'Sensor', 'Alat', 'Lokasi', 'Nilai', 'Satuan']]
 
-        downloadStatus.value = 'Memfilter data...'
-
-        const now = new Date()
-        const limit = hours === 'all'
-            ? new Date(0)
-            : new Date(now - hours * 60 * 60 * 1000)
-
-        const filteredSuhu = suhuData.filter(d =>
-            d.id_sensor === item.sensor_id &&
-            new Date(d.created_at) >= limit
-        )
-
-        const filteredKelembapan = kelembapanData.filter(d =>
-            d.id_sensor === item.sensor_id &&
-            new Date(d.created_at) >= limit
-        )
-
-        console.log(`Found ${filteredSuhu.length} suhu records, ${filteredKelembapan.length} kelembapan records`)
-
-        downloadStatus.value = 'Menyusun data...'
-
-        const rows = []
-        const header = ['Timestamp', 'Sensor', 'Alat', 'Lokasi', 'Jenis', 'Nilai', 'Satuan']
-        rows.push(header)
-        const allData = []
-
-        filteredSuhu.forEach(d => {
-            allData.push({
-                timestamp: new Date(d.created_at),
-                sensor: item.sensor_name,
-                alat: item.device_name,
-                lokasi: item.location,
-                jenis: 'Suhu',
-                nilai: d.nilai_suhu,
-                satuan: '°C'
-            })
-        })
-
-        filteredKelembapan.forEach(d => {
-            allData.push({
-                timestamp: new Date(d.created_at),
-                sensor: item.sensor_name,
-                alat: item.device_name,
-                lokasi: item.location,
-                jenis: 'Kelembapan',
-                nilai: d.nilai_kelembapan,
-                satuan: '%'
-            })
-        })
-
-        allData.sort((a, b) => a.timestamp - b.timestamp)
-        allData.forEach(d => {
-            rows.push([
-                d.timestamp.toLocaleString('id-ID'),
-                d.sensor,
-                d.alat,
-                d.lokasi,
-                d.jenis,
-                d.nilai,
-                d.satuan
+    suhuData
+        .filter(d => d.id_sensor === item.sensor_id && validTime(d))
+        .forEach(d => {
+            suhuSheet.push([
+                new Date(d.created_at.replace(' ', 'T')).toLocaleString('id-ID'),
+                item.sensor_name,
+                item.device_name,
+                item.location,
+                Number(d.nilai_suhu),
+                '°C'
             ])
         })
 
-        if (rows.length <= 1) {
-            downloadDialog.value = false
-            snackbarColor.value = 'warning'
-            snackbarText.value = 'Tidak ada data untuk periode yang dipilih'
-            snackbar.value = true
-            return
-        }
+    kelembapanData
+        .filter(d => d.id_sensor === item.sensor_id && validTime(d))
+        .forEach(d => {
+            kelembapanSheet.push([
+                new Date(d.created_at.replace(' ', 'T')).toLocaleString('id-ID'),
+                item.sensor_name,
+                item.device_name,
+                item.location,
+                Number(d.nilai_kelembapan),
+                '%'
+            ])
+        })
 
-        downloadStatus.value = 'Menyiapkan file...'
-
-        downloadCSV(rows, item.sensor_name, hours)
-
+    if (suhuSheet.length === 1 && kelembapanSheet.length === 1) {
         downloadDialog.value = false
-        snackbarColor.value = 'success'
-        snackbarText.value = `Berhasil mengunduh ${rows.length - 1} data`
+        snackbarColor.value = 'warning'
+        snackbarText.value = 'Tidak ada data'
         snackbar.value = true
-
-        console.log('Download complete!')
-
-    } catch (error) {
-        console.error('Error downloading data:', error)
-        downloadDialog.value = false
-        snackbarColor.value = 'error'
-        snackbarText.value = error.message || 'Gagal mengunduh data'
-        snackbar.value = true
+        return
     }
+
+    const wb = XLSX.utils.book_new()
+
+    if (suhuSheet.length > 1)
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(suhuSheet), 'Suhu')
+
+    if (kelembapanSheet.length > 1)
+        XLSX.utils.book_append_sheet(
+            wb,
+            XLSX.utils.aoa_to_sheet(kelembapanSheet),
+            'Kelembapan'
+        )
+
+    XLSX.writeFile(
+        wb,
+        `${item.sensor_name}_${new Date().toISOString().slice(0, 19)}.xlsx`
+    )
+
+    downloadDialog.value = false
 }
 
-const downloadCSV = (rows, sensorName, hours) => {
-    const csv = rows
-        .map(r => r.map(c => `"${c}"`).join(','))
-        .join('\n')
+const goToDeviceDetail = item =>
+    router.push(`/device/${item.device_id}?sensor=${item.sensor_id}`)
 
-    const blob = new Blob(['\uFEFF' + csv], {
-        type: 'text/csv;charset=utf-8;'
-    })
+const getStatusColor = s =>
+    s === 'Normal' ? 'success' : s === 'Sensor Off' ? 'grey' : 'error'
 
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
-    const period = hours === 'all' ? 'semua' : `${hours}jam`
-    const filename = `${sensorName}_${period}_${timestamp}.csv`
-
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.style.visibility = 'hidden'
-
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(link.href)
-    console.log(`File saved: ${filename}`)
-}
+const getStatusIcon = s =>
+    s === 'Normal'
+        ? 'mdi-check-circle'
+        : s === 'Sensor Off'
+            ? 'mdi-help-circle'
+            : 'mdi-alert-circle'
 </script>
+
 
 <style scoped>
 .sensor-name {

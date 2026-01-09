@@ -10,8 +10,21 @@
             <v-col v-for="card in sensorCards" :key="card.title" cols="12" sm="6">
                 <v-card :class="card.gradientClass" class="text-center py-4 sensor-card">
                     <v-icon size="36" class="mb-2 card-icon">{{ card.icon }}</v-icon>
+
                     <div class="text-h6 card-text">{{ card.title }}</div>
-                    <div class="text-h5 font-weight-bold card-text">{{ card.value }}</div>
+                    <div class="text-h5 font-weight-bold card-text mb-2">
+                        {{ card.value }}
+                    </div>
+
+                    <!-- CHIP BATASAN -->
+                    <div class="d-flex justify-center gap-2 flex-wrap px-2">
+                        <v-chip size="small" variant="elevated" :color="card.status === 'Normal' ? 'green' : 'red'"
+                            class="text-white">
+                            {{ card.title }}:
+                            {{ card.range.min }}{{ card.unit }} –
+                            {{ card.range.max }}{{ card.unit }}
+                        </v-chip>
+                    </div>
                 </v-card>
             </v-col>
         </v-row>
@@ -29,10 +42,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, shallowRef, markRaw } from 'vue'
+import { useRoute } from 'vue-router'
 import Chart from 'chart.js/auto'
 import { useDevices } from '@/composables/useDevices'
 import { useSensorData } from '@/composables/useSensorData'
 import { useBatasan } from '@/composables/useBatasan'
+
+const route = useRoute() 
 
 const props = defineProps({
     device: {
@@ -49,7 +65,8 @@ const chartCanvas = ref(null)
 const chart = shallowRef(null)
 const sensorCards = ref([])
 const isUsingAPI = ref(false)
-const currentSensorId = ref(null)
+const sensor1Id = ref(null) 
+const sensor2Id = ref(null) 
 
 const chartData = ref({
     labels: [],
@@ -66,55 +83,89 @@ const deviceKategori = computed(() => {
 
 async function updateData() {
     try {
-        console.log('Fetching new data from API...')
-        console.log('DEBUG deviceSensors (raw):', deviceSensors)
-
         const apiData = await fetchSensorData()
 
         if (apiData) {
-            console.log('Data received from API:', apiData)
             isUsingAPI.value = true
 
+            const targetSensorId = route.query.sensor ? parseInt(route.query.sensor) : null
+
             if (deviceSensors && deviceSensors.value && deviceSensors.value.length > 0) {
-                currentSensorId.value = deviceSensors.value[0].id
+
+                if (targetSensorId) {
+                    const targetSensor = deviceSensors.value.find(s => s.id === targetSensorId)
+
+                    if (targetSensor) {
+                        sensor1Id.value = targetSensor.id
+                        const otherSensor = deviceSensors.value.find(s => s.id !== targetSensorId)
+                        sensor2Id.value = otherSensor?.id || null
+
+                    } else {
+                        sensor1Id.value = deviceSensors.value[0]?.id || null
+                        sensor2Id.value = deviceSensors.value[1]?.id || null
+                    }
+                } else {
+                    sensor1Id.value = deviceSensors.value[0]?.id || null
+                    sensor2Id.value = deviceSensors.value[1]?.id || null
+                }
+
             } else {
-                console.warn('deviceSensors undefined or empty, cannot read first sensor id')
-                currentSensorId.value = null
+                sensor1Id.value = null
+                sensor2Id.value = null
             }
+
             const data = {
                 suhu: parseFloat(apiData.suhu1 ?? apiData.suhu2 ?? 0).toFixed(1),
                 kelembapan: parseFloat(apiData.kelembapan1 ?? apiData.kelembapan2 ?? 0).toFixed(1),
             }
 
-            updateDataDisplay(data)
+            await updateDataDisplay(data)
         } else {
-            console.warn('No data from API')
             isUsingAPI.value = false
         }
     } catch (err) {
-        console.error('Error fetching data:', err)
         isUsingAPI.value = false
     }
 }
 
-function updateDataDisplay(data) {
+async function updateDataDisplay(data) {
     const defaultBatasan = { suhu_min: 2, suhu_max: 8, kelembapan_min: 45, kelembapan_max: 60 }
-    let batasan = defaultBatasan
 
-    if (currentSensorId.value) {
-        const fetched = getBatasanBySensorId(currentSensorId.value)
-        batasan = fetched || defaultBatasan
+    let batasanSensor1 = defaultBatasan
+    let batasanSensor2 = defaultBatasan
+
+    if (sensor1Id.value) {
+        const fetched1 = getBatasanBySensorId(sensor1Id.value)
+
+        if (fetched1) {
+            batasanSensor1 = fetched1
+            console.log('Using sensor 1 specific batasan:', batasanSensor1)
+        } else {
+            console.warn('No batasan found for sensor 1 ID:', sensor1Id.value, '- using default')
+        }
+    }
+
+    if (sensor2Id.value) {
+        const fetched2 = getBatasanBySensorId(sensor2Id.value)
+        console.log('Fetched batasan for Sensor 2:', fetched2)
+
+        if (fetched2) {
+            batasanSensor2 = fetched2
+            console.log('Using sensor 2 specific batasan:', batasanSensor2)
+        } else {
+            console.warn('No batasan found for sensor 2 ID:', sensor2Id.value, '- using default')
+        }
     }
 
     const suhuVal = parseFloat(data.suhu)
     const kelembapanVal = parseFloat(data.kelembapan)
 
-    const suhuStatus = currentSensorId.value
-        ? (typeof isSuhuNormal === 'function' && isSuhuNormal(currentSensorId.value, suhuVal) ? 'Normal' : 'Tidak Normal')
+    const suhuStatus = sensor1Id.value
+        ? (typeof isSuhuNormal === 'function' && isSuhuNormal(sensor1Id.value, suhuVal) ? 'Normal' : 'Tidak Normal')
         : 'Normal'
 
-    const kelembapanStatus = currentSensorId.value
-        ? (typeof isKelembapanNormal === 'function' && isKelembapanNormal(currentSensorId.value, kelembapanVal) ? 'Normal' : 'Tidak Normal')
+    const kelembapanStatus = sensor2Id.value
+        ? (typeof isKelembapanNormal === 'function' && isKelembapanNormal(sensor2Id.value, kelembapanVal) ? 'Normal' : 'Tidak Normal')
         : 'Normal'
 
     sensorCards.value = [
@@ -124,7 +175,7 @@ function updateDataDisplay(data) {
             icon: 'mdi-thermometer',
             gradientClass: 'gradient-blue',
             unit: '°C',
-            range: { min: batasan.suhu_min, max: batasan.suhu_max },
+            range: { min: batasanSensor1.suhu_min, max: batasanSensor1.suhu_max }, // Sensor 1
             status: suhuStatus
         },
         {
@@ -133,10 +184,12 @@ function updateDataDisplay(data) {
             icon: 'mdi-water-percent',
             gradientClass: 'gradient-teal',
             unit: '%',
-            range: { min: batasan.kelembapan_min, max: batasan.kelembapan_max },
+            range: { min: batasanSensor2.kelembapan_min, max: batasanSensor2.kelembapan_max }, // Sensor 2
             status: kelembapanStatus
         },
     ]
+
+    console.log('Sensor cards updated:', sensorCards.value)
 
     updateDeviceKategori(props.device.id_alat, {
         suhu1: suhuVal,
@@ -251,10 +304,11 @@ async function initDashboard() {
     sensorCards.value = []
 
     createChart()
-    updateData()
+
+    await updateData()
 
     if (interval) clearInterval(interval)
-    interval = setInterval(updateData, 30000)
+    interval = setInterval(updateData, 20000)
 }
 
 function teardown() {

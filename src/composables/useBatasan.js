@@ -59,18 +59,50 @@ export function useBatasan() {
     }
 
     const isSuhuNormal = (sensorId, suhuValue) => {
+        if (suhuValue === undefined || suhuValue === null) return false
+
+        const suhu = Number(suhuValue)
         const batasan = getBatasanBySensorId(sensorId)
-        return suhuValue >= batasan.suhu_min && suhuValue <= batasan.suhu_max
+
+        return suhu >= batasan.suhu_min && suhu <= batasan.suhu_max
     }
 
     const isKelembapanNormal = (sensorId, kelembapanValue) => {
+        if (kelembapanValue === undefined || kelembapanValue === null) return false
+
+        const kelembapan = Number(kelembapanValue)
         const batasan = getBatasanBySensorId(sensorId)
-        return kelembapanValue >= batasan.kelembapan_min && kelembapanValue <= batasan.kelembapan_max
+
+        return (
+            kelembapan >= batasan.kelembapan_min &&
+            kelembapan <= batasan.kelembapan_max
+        )
+    }
+    const isSensorNormal = (sensorId, suhuValue, kelembapanValue) => {
+        const batasan = getBatasanBySensorId(sensorId)
+
+        let suhuOk = true
+        let kelembapanOk = true
+
+        if (suhuValue !== undefined && suhuValue !== null && suhuValue !== '') {
+            const suhu = Number(suhuValue)
+            suhuOk = suhu >= batasan.suhu_min && suhu <= batasan.suhu_max
+        }
+
+        if (
+            kelembapanValue !== undefined &&
+            kelembapanValue !== null &&
+            kelembapanValue !== ''
+        ) {
+            const kelembapan = Number(kelembapanValue)
+            kelembapanOk =
+                kelembapan >= batasan.kelembapan_min &&
+                kelembapan <= batasan.kelembapan_max
+        }
+
+        return suhuOk && kelembapanOk
     }
 
-    const isSensorNormal = (sensorId, suhuValue, kelembapanValue) => {
-        return isSuhuNormal(sensorId, suhuValue) && isKelembapanNormal(sensorId, kelembapanValue)
-    }
 
     const createBatasan = async (data) => {
         try {
