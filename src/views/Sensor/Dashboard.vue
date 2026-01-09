@@ -53,7 +53,7 @@
         :items="filteredSensorList"
         :search="search"
         :loading="loading"
-        items-per-page="10"
+        items-per-page="100"
         class="elevation-1"
       >
         <template #loading>
