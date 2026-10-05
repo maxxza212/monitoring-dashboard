@@ -20,7 +20,7 @@
         <v-list-item prepend-icon="mdi-view-dashboard" title="Dasbor" value="dashboard" :active="$route.path === '/'"
           @click="navigateTo('/')" class="mb-1 glass-list-item">
           <template v-slot:append>
-            <v-badge v-if="deviceCount > 0" :content="deviceCount" color="primary" inline></v-badge>
+            <!-- <v-badge v-if="deviceCount > 0" :content="deviceCount" color="primary" inline></v-badge> -->
           </template>
         </v-list-item>
 

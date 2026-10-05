@@ -53,7 +53,7 @@
         :items="filteredSensorList"
         :search="search"
         :loading="loading"
-        items-per-page="10"
+        items-per-page="100"
         class="elevation-1"
       >
         <template #loading>
@@ -602,17 +602,17 @@ const submitForm = async () => {
         kelembapan_max: formData.value.kelembapan_max,
       };
 
-      try {
-        if (formData.value.id) {
-          await updateBatasan(formData.value.id, batasanData);
-        } else {
-          await createBatasan(batasanData);
+            try {
+                if (formData.value.batasan_id) {
+                    await updateBatasan(formData.value.id, batasanData);
+                } else {
+                    await createBatasan(batasanData);
+                }
+            } catch (err) {
+                console.warn("Failed to save batasan:", err);
+                showError("Sensor berhasil disimpan, tapi batasan gagal disimpan");
+            }
         }
-      } catch (err) {
-        console.warn("Failed to save batasan:", err);
-        showError("Sensor berhasil disimpan, tapi batasan gagal disimpan");
-      }
-    }
 
     showSuccess(
       editMode.value
