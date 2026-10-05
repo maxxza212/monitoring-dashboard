@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = 'http://10.107.108.22:6003/api'
+// const API_BASE_URL = 'http://10.107.108.22:6003/api'
+const API_BASE_URL = "http://localhost:8000/api";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -11,118 +12,123 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(
-    config => {
-        console.log('API Request:', config.method.toUpperCase(), config.url)
-        return config
-    },
-    error => {
-        console.error('Request Error:', error)
-        return Promise.reject(error)
-    }
-)
+  (config) => {
+    console.log("API Request:", config.method.toUpperCase(), config.url);
+    return config;
+  },
+  (error) => {
+    console.error("Request Error:", error);
+    return Promise.reject(error);
+  },
+);
 
 apiClient.interceptors.response.use(
-    response => {
-        return response
-    },
-    error => {
-        console.error('API Error:', {
-            status: error.response?.status,
-            message: error.response?.data?.message || error.message,
-            data: error.response?.data
-        })
-        return Promise.reject(error)
-    }
-)
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error("API Error:", {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data,
+    });
+    return Promise.reject(error);
+  },
+);
 
 export const deviceAPI = {
-    // SENSOR
-    getAllSensors() {
-        return apiClient.get('/sensor')
-    },
-    getSensorById(id) {
-        return apiClient.get(`/sensor/${id}`)
-    },
-    createSensor(data) {
-        return apiClient.post('/sensor', data)
-    },
-    updateSensor(id, data) {
-        return apiClient.put(`/sensor/${id}`, data)
-    },
-    deleteSensor(id) {
-        return apiClient.delete(`/sensor/${id}`)
-    },
+  // SENSOR
+  getAllSensors() {
+    return apiClient.get("/sensor");
+  },
+  getSensorById(id) {
+    return apiClient.get(`/sensor/${id}`);
+  },
+  createSensor(data) {
+    return apiClient.post("/sensor", data);
+  },
+  updateSensor(id, data) {
+    return apiClient.put(`/sensor/${id}`, data);
+  },
+  deleteSensor(id) {
+    return apiClient.delete(`/sensor/${id}`);
+  },
 
-    // ALAT/DEVICE 
-    getAllDevices() {
-        return apiClient.get('/alat')
-    },
-    getDeviceById(id) {
-        return apiClient.get(`/alat/${id}`)
-    },
-    createDevice(data) {
-        return apiClient.post('/alat', data)
-    },
-    updateDevice(id, data) {
-        return apiClient.put(`/alat/${id}`, data)
-    },
-    deleteDevice(id) {
-        return apiClient.delete(`/alat/${id}`)
-    },
+  // ALAT/DEVICE
+  getAllDevices() {
+    return apiClient.get("/alat");
+  },
+  getDeviceById(id) {
+    return apiClient.get(`/alat/${id}`);
+  },
+  createDevice(data) {
+    return apiClient.post("/alat", data);
+  },
+  updateDevice(id, data) {
+    return apiClient.put(`/alat/${id}`, data);
+  },
+  deleteDevice(id) {
+    return apiClient.delete(`/alat/${id}`);
+  },
 
-    // RUANGAN 
-    getAllRuangan() {
-        return apiClient.get('/ruangan')
-    },
-    getRuanganById(id) {
-        return apiClient.get(`/ruangan/${id}`)
-    },
-    createRuangan(data) {
-        return apiClient.post('/ruangan', data)
-    },
-    updateRuangan(id, data) {
-        return apiClient.put(`/ruangan/${id}`, data)
-    },
-    deleteRuangan(id) {
-        return apiClient.delete(`/ruangan/${id}`)
-    },
+  // RUANGAN
+  getAllRuangan() {
+    return apiClient.get("/ruangan");
+  },
+  getRuanganById(id) {
+    return apiClient.get(`/ruangan/${id}`);
+  },
+  createRuangan(data) {
+    return apiClient.post("/ruangan", data);
+  },
+  updateRuangan(id, data) {
+    return apiClient.put(`/ruangan/${id}`, data);
+  },
+  deleteRuangan(id) {
+    return apiClient.delete(`/ruangan/${id}`);
+  },
 
-    // SUHU
-    getAllSuhu() {
-        return apiClient.get('/suhu')
-    },
-    getSuhu(page = 1, perPage = 50) {
-        return apiClient.get('/suhu', {
-            params: { page, per_page: perPage }
-        })
-    },
+  // SUHU
+  getAllSuhu() {
+    return apiClient.get("/suhu");
+  },
+  getSuhu(page = 1, perPage = 50) {
+    return apiClient.get("/suhu", {
+      params: { page, per_page: perPage },
+    });
+  },
+  // KELEMBAPAN
+  getAllKelembapan() {
+    return apiClient.get("/kelembapan");
+  },
+  getKelembapan(page = 1, perPage = 50) {
+    return apiClient.get("/kelembapan", {
+      params: { page, per_page: perPage },
+    });
+  },
+  // DATA SENSOR 2 BULAN TERAKHIR
+  getDataDuaBulanTerakhir(sensorId) {
+    return apiClient.get("/data/dua-bulan-terakhir", {
+      params: { id_sensor: sensorId },
+    });
+  },
 
-    // KELEMBAPAN
-    getAllKelembapan() {
-        return apiClient.get('/kelembapan')
-    },
-    getKelembapan(page = 1, perPage = 50) {
-        return apiClient.get('/kelembapan', {
-            params: { page, per_page: perPage }
-        })
-    },
-
-    // BATASAN 
-    getAllBatasan() {
-        return apiClient.get('/batasan')
-    },
-    getBatasanBySensorId(sensorId) {
-        return apiClient.get(`/batasan/${sensorId}`)
-    },
-    createBatasan(data) {
-        return apiClient.post('/batasan', data)
-    },
-    updateBatasan(id, data) {
-        return apiClient.put(`/batasan/${id}`, data)
-    },
-    deleteBatasan(id) {
-        return apiClient.delete(`/batasan/${id}`)
-    },
-}
+  // BATASAN
+  getAllBatasan() {
+    return apiClient.get("/batasan");
+  },
+  getBatasanBySensorId(sensorId) {
+    return apiClient.get(`/batasan/${sensorId}`);
+  },
+  createBatasan(data) {
+    return apiClient.post("/batasan", data);
+  },
+  updateBatasan(id, data) {
+    return apiClient.put(`/batasan/${id}`, data);
+  },
+  deleteBatasan(id) {
+    return apiClient.delete(`/batasan/${id}`);
+  },
+};
 
 export default apiClient;
